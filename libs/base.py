@@ -4,14 +4,11 @@ import random
 from eth_account.messages import _hash_eip191_message, encode_defunct, encode_typed_data
 from hexbytes import HexBytes
 from loguru import logger
-from web3.contract.async_contract import AsyncContract
-from web3.contract.contract import Contract
 from web3.exceptions import TimeExhausted
 from web3.types import TxParams
 
-
 from libs.eth_async.client import Client
-from libs.eth_async.data.models import Networks, TokenAmount, TxArgs
+from libs.eth_async.data.models import TokenAmount
 from utils.browser import Browser
 from utils.db_api.models import Wallet
 

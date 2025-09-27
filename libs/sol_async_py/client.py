@@ -6,7 +6,6 @@ from cryptography.hazmat.primitives._serialization import Encoding, PublicFormat
 from cryptography.hazmat.primitives.asymmetric import ed25519
 from solana.rpc import async_api
 from solders.keypair import Keypair
-from solders.pubkey import Pubkey
 
 from libs.sol_async_py.data.models import Network
 from libs.sol_async_py.instructions import Instructions

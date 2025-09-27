@@ -1,8 +1,6 @@
 from dataclasses import dataclass
 
 from data.settings import Settings
-from libs.eth_async.classes import Singleton
-from libs.eth_async.data.models import DefaultABIs, RawContract
 from libs.py_okx_async.models import OKXCredentials
 
 settings = Settings()

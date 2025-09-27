@@ -2,12 +2,10 @@ from __future__ import annotations
 
 import struct
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, List, Optional
 
-from typing import List, Tuple
-
-from solders.instruction import AccountMeta, Instruction, CompiledInstruction
-from solders.message import MessageV0, Message
+from solders.instruction import AccountMeta, CompiledInstruction, Instruction
+from solders.message import Message, MessageV0
 from solders.pubkey import Pubkey
 
 if TYPE_CHECKING:

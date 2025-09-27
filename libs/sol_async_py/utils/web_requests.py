@@ -1,5 +1,7 @@
 from curl_cffi.requests import AsyncSession
+
 from libs.eth_async import exceptions
+
 
 def request_params(params: dict[str, ...] | None) -> dict[str, str | int | float] | None:
     """

@@ -1,33 +1,19 @@
 import asyncio
 import base64
 import hashlib
-import json
 import random
 from time import time
-from typing import Optional, Dict, Any, Tuple
+from typing import Any, Dict, Optional, Tuple
 
-import solders.system_program
-from curl_cffi import requests
 from loguru import logger
-from solana.rpc.commitment import Commitment
-from solana.rpc.types import TokenAccountOpts, TxOpts
-from solders.instruction import Instruction, AccountMeta, CompiledInstruction
-from solders.keypair import Keypair
-from solders.message import Message, MessageV0
-from solders.pubkey import Pubkey
-from solders.system_program import create_account, CreateAccountParams
-from solders.transaction import Transaction, VersionedTransaction
-from spl.token.instructions import initialize_account, InitializeAccountParams, create_associated_token_account, \
-    transfer_checked, TransferCheckedParams
-from solders.token import associated
+from solders.message import MessageV0
+from solders.transaction import VersionedTransaction
 
 from data.settings import Settings
-from libs.base_sol import TokenContracts, Base
+from libs.base_sol import Base, TokenContracts
 from libs.sol_async_py.client import Client
-from libs.sol_async_py.data.models import RawContract, TokenAmount
-from libs.sol_async_py.instructions import Instructions, COMPUTE_BUDGET
-from libs.sol_async_py.utils.web_requests import async_post, aiohttp_params, async_get
-
+from libs.sol_async_py.data.models import TokenAmount
+from libs.sol_async_py.instructions import COMPUTE_BUDGET
 from utils.browser import Browser
 from utils.db_api.models import Wallet
 from utils.db_api.wallet_api import db

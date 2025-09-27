@@ -9,7 +9,6 @@ from data.config import FILES_DIR
 from data.settings import Settings
 from libs.sol_async_py.client import Client
 from libs.sol_async_py.data.models import Networks
-
 from utils.db_api.models import Wallet
 from utils.db_api.wallet_api import db, get_wallet_by_address
 from utils.encryption import check_encrypt_param, get_private_key, prk_encrypt

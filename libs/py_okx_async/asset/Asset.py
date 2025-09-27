@@ -1,13 +1,21 @@
-from typing import Optional, Dict, Union
+from typing import Dict, Optional, Union
 
 from libs.eth_async.utils.web_requests import request_params
-
-from libs.py_okx_async.Base import Base
 from libs.py_okx_async.asset.models import (
-    Currency, TransactionType, TransactionTypes, WithdrawalStatus, Withdrawal, WithdrawalToken, TransferType,
-    TransferTypes, Transfer, DepositStatus, Deposit
+    Currency,
+    Deposit,
+    DepositStatus,
+    TransactionType,
+    TransactionTypes,
+    Transfer,
+    TransferType,
+    TransferTypes,
+    Withdrawal,
+    WithdrawalStatus,
+    WithdrawalToken,
 )
-from libs.py_okx_async.models import Methods, FundingToken, AccountType, AccountTypes
+from libs.py_okx_async.Base import Base
+from libs.py_okx_async.models import AccountType, AccountTypes, FundingToken, Methods
 from libs.py_okx_async.utils import secs_to_millisecs
 
 

@@ -1,4 +1,3 @@
-from libs.py_okx_async import exceptions
 
 
 async def secs_to_millisecs(secs: int | float | str) -> int:

@@ -1,11 +1,9 @@
 import asyncio
 import base64
 
-from curl_cffi import AsyncSession
 from loguru import logger
 from solders.transaction import VersionedTransaction
 
-from data.settings import Settings
 from libs.sol_async_py.client import Client
 from libs.sol_async_py.data.models import RawContract, TokenAmount
 from utils.browser import Browser

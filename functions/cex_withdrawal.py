@@ -5,11 +5,11 @@ from loguru import logger
 
 from data.models import okx_credentials
 from data.settings import Settings
-from utils.db_api.models import Wallet
-from libs.py_okx_async.OKXClient import OKXClient
-from libs.py_okx_async.asset.models import TransferTypes, Currency, Withdrawal
+from libs.py_okx_async.asset.models import Currency, TransferTypes, Withdrawal
 from libs.py_okx_async.exceptions import APIException
-from libs.py_okx_async.models import OKXCredentials, Chains, AccountTypes
+from libs.py_okx_async.models import AccountTypes, Chains, OKXCredentials
+from libs.py_okx_async.OKXClient import OKXClient
+from utils.db_api.models import Wallet
 
 
 async def okx_withdraw(wallet: Wallet, amount, chain, symbol):
