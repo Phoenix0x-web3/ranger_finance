@@ -108,6 +108,8 @@ class Controller:
 
         balance = await self.client.wallet.balance()
 
+        if float(balance.Ether) <= for_comissions:
+            raise Exception(f"Low balance for init: {balance} sol < {for_comissions} sol")
 
         amount = TokenAmount(
             amount=float(balance.Ether) - for_comissions
@@ -142,8 +144,10 @@ class Controller:
         any_token_balances = [t for t in list(balance_map.values()) if float(t.Ether) > 10]
 
         if not any_token_balances:
-            initial_swap = await self.make_first_swap(for_comissions=settings.sol_balance_for_commissions)
 
+
+
+            initial_swap = await self.make_first_swap(for_comissions=settings.sol_balance_for_commissions)
             logger.success(initial_swap)
 
         ref_status = await self.ranger.get_refferal_status()
@@ -152,6 +156,7 @@ class Controller:
 
 
         if float(balance.Ether) <= settings.minimal_sol_balance:
+
             refill_sol_balance = await self.refill_sol_balance()
             logger.success(refill_sol_balance)
 
