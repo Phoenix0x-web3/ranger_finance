@@ -47,3 +47,32 @@ random_pause_between_actions:
 random_pause_start_wallet:
   min: 0
   max: 60
+
+#OKX api keys
+okx_api_key: ''
+okx_api_secret: ''
+okx_passphrase: ''
+
+#Withdrawal amount in SOL
+withdrawal_amount:
+  min: 0.8
+  max: 1
+
+#Percent for SOL commissions:
+sol_balance_for_commissions: 0.05
+
+#Minimal Sol Balance to refill SOL for comission
+minimal_sol_balance: 0.005
+
+#Refill Sol for commission in usd
+refill_usd_amount:
+  min: 8
+  max: 10
+
+#Swaps count per cycle on SPOT
+swaps_count:
+  min: 5
+  max: 10
+
+#Invite codes
+invite_codes: []

@@ -11,9 +11,7 @@ from libs.eth_async.utils.files import touch
 REQUIRED_FILES = [
     "private_keys.txt",
     "proxy.txt",
-    "twitter_tokens.txt",
-    "discord_tokens.txt",
-    "discord_proxy.txt",
+    "deposit_addresses.txt",
 ]
 
 

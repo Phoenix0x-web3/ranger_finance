@@ -9,7 +9,7 @@ from web3.contract.contract import Contract
 from web3.exceptions import TimeExhausted
 from web3.types import TxParams
 
-from data.models import Contracts
+
 from libs.eth_async.client import Client
 from libs.eth_async.data.models import Networks, TokenAmount, TxArgs
 from utils.browser import Browser
@@ -132,69 +132,3 @@ class Base:
         if status == 1:
             return True
         return False
-
-    async def wrap_eth(self, amount: TokenAmount = None):
-        success_text = f"BASE | Wrap ETH | Success | {amount.Ether:.5f} ETH"
-        failed_text = f"BASE | Wrap ETH | Failed | {amount.Ether:.5f} ETH"
-
-        if self.client.network == Networks.Ethereum:
-            weth = Contracts.WETH_ETHEREUM
-        else:
-            weth = Contracts.WETH
-
-        contract = await self.client.contracts.get(contract_address=weth)
-
-        encode = contract.encode_abi("deposit", args=[])
-        # print(encode)
-        tx_params = TxParams(to=contract.address, data=encode, value=amount.Wei)
-
-        tx_label = f"Wrapped {amount.Ether:.5f}"
-
-        tx = await self.client.transactions.sign_and_send(tx_params=tx_params)
-        await asyncio.sleep(random.randint(2, 4))
-        receipt = await tx.wait_for_receipt(client=self.client, timeout=300)
-
-        if receipt:
-            logger.success(success_text)
-            return tx_label
-        else:
-            logger.warning(failed_text)
-            return None
-
-    async def unwrap_eth(self, amount: TokenAmount = None):
-        if self.client.network == Networks.Ethereum:
-            weth = Contracts.WETH_ETHEREUM
-        else:
-            weth = Contracts.WETH
-
-        if not amount:
-            amount = await self.client.wallet.balance(token=weth)
-
-        contract = await self.client.contracts.get(contract_address=weth)
-
-        data = TxArgs(wad=amount.Wei).tuple()
-
-        encode = contract.encode_abi("withdraw", args=data)
-        # print(encode)
-        tx_params = TxParams(to=contract.address, data=encode, value=0)
-
-        tx_label = f"Unwrapper {amount.Ether:.5f}"
-
-        tx = await self.client.transactions.sign_and_send(tx_params=tx_params)
-        await asyncio.sleep(random.randint(2, 4))
-        receipt = await tx.wait_for_receipt(client=self.client, timeout=300)
-
-        if receipt:
-            return tx_label
-
-    async def check_nft_balance(
-        self,
-        contract: AsyncContract | Contract,
-    ):
-        module_contract = self.client.w3.eth.contract(
-            address=self.client.w3.to_checksum_address(contract.address),
-            abi=contract.abi,
-        )
-        balance = await module_contract.functions.balanceOf(self.client.account.address).call()
-
-        return balance

@@ -1,37 +1,158 @@
-from libs.base import Base
-from libs.eth_async.client import Client
-from modules.tesst_module import TestModule
+import asyncio
+import random
+from time import time
+
+from loguru import logger
+
+from data.models import okx_credentials
+from data.settings import Settings
+from functions.cex_withdrawal import okx_withdraw, OKXActions
+from libs.base_sol import TokenContracts
+from libs.sol_async_py.client import Client
+from libs.sol_async_py.data.models import TokenAmount
+from libs.sol_async_py.utils.utils import randfloat
+from modules.ranger import RangerFinance
 from utils.db_api.models import Wallet
+from utils.db_api.wallet_api import db
 from utils.logs_decorator import controller_log
 
 
 class Controller:
     def __init__(self, client: Client, wallet: Wallet):
-        # super().__init__(client)
         self.client = client
         self.wallet = wallet
-        self.base = Base(client=client, wallet=wallet)
-        self.test_module = TestModule(client=client, wallet=wallet)
+        self.ranger = RangerFinance(client=client, wallet=wallet)
 
-    async def testings_info(self):
-        return self.wallet
+    async def update_db_by_user_info(self):
+        rank = await self.ranger.get_leaderboard_rank()
+        self.wallet.rank = rank.get('position')
+        self.wallet.volume_portal = rank.get('total_volume')
+        db.commit()
 
-    async def testings_requests(self):
-        return await self.test_module.test_module_reqs()
+        return
 
-    @controller_log("Balance Query")
-    async def testing_web3(self):
-        return await self.client.wallet.balance()
+    @controller_log('OKX Withdrawal')
+    async def withdrawal_from_okx(self):
+        settings = Settings()
 
-    async def testing_twitter(self):
-        # await self.test_module.twitter_test_auth()
-        # await self.test_module.twitter_test_reply()
-        await self.test_module.twitter_test_name()
+        amount = randfloat(from_=settings.withdrawal_amount_min,
+                           to_=settings.withdrawal_amount_max,
+                           step=0.001)
 
-        # await self.test_module.twitter_test_module_initialize_with_login()
-        # await self.test_module.twitter_test_follow_account_and_check_already_follow()
-        # await self.test_module.twitter_test_like_tweet()
-        # await self.test_module.twitter_test_retweet()
-        # await self.test_module.twitter_test_post()
-        await self.test_module.twitter.close()
-        return "success"
+
+        okx = OKXActions(credentials=okx_credentials)
+
+        chain = 'Solana'
+        token_symbol = 'SOL'
+
+        res = await okx.withdraw(
+            to_address=str(self.wallet.address),
+            amount=amount,
+            token_symbol=token_symbol,
+            chain=chain
+        )
+
+        if 'Failed' not in res:
+            logger.success(f'{self.wallet} | OKX Withdrawal | {res} successfully')
+
+            await asyncio.sleep(10)
+
+            timeout = 360
+
+            started = time()
+
+            balance = await self.client.wallet.balance()
+
+            while float(balance.Ether) < amount:
+
+                sleep = random.randint(20,30)
+                logger.warning(f"{self.wallet} | OKX | awaiting balance, retry in {sleep} sec..")
+                await asyncio.sleep(sleep)
+                balance = await self.client.wallet.balance()
+
+            if time() - started > timeout:
+                raise Exception(f"Something went wrong in Withdrawal, no sol balance received")
+
+            return f"Success withdraw {amount:.3f} {token_symbol} | balance {balance}"
+
+        raise Exception(f"Error | {res}")
+
+    @controller_log('Refill Solana from Tokens')
+    async def refill_sol_balance(self):
+        settings = Settings()
+        tokens = [TokenContracts.USDC, TokenContracts.USDT]
+
+        token_balances = await self.ranger.balance_map(token_map=tokens)
+
+        refill_amount = random.randint(settings.refill_usd_amount_min, settings.refill_usd_amount_max)
+
+        candidates = {}
+
+        for token, balance in token_balances.items():
+            if float(balance.Ether) >= refill_amount:
+                candidates[token] = balance
+
+        if candidates:
+            from_token = random.choice(list(candidates.keys()))
+
+            return await self.ranger.swap_from_quote(
+                from_token=from_token,
+                to_token=TokenContracts.SOL,
+                amount=TokenAmount(amount=refill_amount, decimals=6)
+            )
+
+        raise Exception(f"Cannot refill SOL, balances in tokens lower that {refill_amount} -- {token_balances}")
+
+    @controller_log(f'Initial Swap')
+    async def make_first_swap(self, for_comissions, balance):
+
+        amount = TokenAmount(
+            amount=float(balance.Ether) - for_comissions
+        )
+
+        logger.debug(f'{self.wallet} | Ranger Finance | trying to make first swap from {amount} of SOL')
+
+        return await self.ranger.swap_from_quote(
+            from_token=TokenContracts.SOL,
+            to_token=random.choice([TokenContracts.USDC, TokenContracts.USDT]),
+            amount=amount
+        )
+
+    async def build_actions(self):
+        settings = Settings()
+
+        swaps_count = random.randint(settings.swaps_count_min, settings.swaps_count_max)
+
+        balance = await self.client.wallet.balance()
+
+        if float(balance.Ether) == 0.0:
+
+            withdraw = await self.withdrawal_from_okx()
+
+            logger.success(withdraw)
+
+        final_actions = []
+
+        tokens = [TokenContracts.USDC, TokenContracts.USDT]
+        balance_map = await self.ranger.balance_map(token_map=tokens)
+
+        any_token_balances = [t for t in list(balance_map.values()) if float(t.Ether) > 10]
+
+        if not any_token_balances:
+            initial_swap = await self.make_first_swap(for_comissions=settings.sol_balance_for_commissions,
+                                                              balance=balance)
+            logger.success(initial_swap)
+
+        ref_status = await self.ranger.get_refferal_status()
+        if not ref_status:
+            final_actions.append(lambda: self.ranger.apply_referral())
+
+
+        if float(balance.Ether) <= settings.minimal_sol_balance:
+            refill_sol_balance = await self.refill_sol_balance()
+            logger.success(refill_sol_balance)
+
+        if float(balance.Ether) >= 0:
+            final_actions += [lambda: self.ranger.swap_controller() for _ in range(swaps_count)]
+
+        return final_actions

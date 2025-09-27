@@ -29,8 +29,26 @@ class Settings(Singleton):
         self.random_pause_wallet_after_completion_min = json_data.get("random_pause_wallet_after_completion", {}).get("min")
         self.random_pause_wallet_after_completion_max = json_data.get("random_pause_wallet_after_completion", {}).get("max")
 
+        self.withdrawal_amount_min = json_data.get("withdrawal_amount", {}).get("min")
+        self.withdrawal_amount_max = json_data.get("withdrawal_amount", {}).get("max")
+
+        self.refill_usd_amount_min = json_data.get("refill_usd_amount", {}).get("min")
+        self.refill_usd_amount_max = json_data.get("refill_usd_amount", {}).get("max")
+
+        self.swaps_count_min = json_data.get("swaps_count", {}).get("min")
+        self.swaps_count_max = json_data.get("swaps_count", {}).get("max")
+
+        self.okx_api_key = json_data.get("okx_api_key", "")
+        self.okx_api_secret = json_data.get("okx_api_secret", "")
+        self.okx_passphrase = json_data.get("okx_passphrase", "")
+
+        self.minimal_sol_balance = json_data.get("minimal_sol_balance", "")
+        self.sol_balance_for_commissions = json_data.get("sol_balance_for_commissions", "")
+        self.invite_codes = json_data.get("invite_codes", "")
+
         self.tg_bot_id = json_data.get("tg_bot_id", "")
         self.tg_user_id = json_data.get("tg_user_id", "")
+
         self.retry = json_data.get("retry", {})
 
 

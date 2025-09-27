@@ -25,3 +25,6 @@ ruamel.yaml==0.18.14
 pyaml==25.7.0
 lxml==6.0.0
 GitPython==3.1.45
+solana==0.36.2
+solders==0.23.0
+base58==2.1.1

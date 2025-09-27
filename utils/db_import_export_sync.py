@@ -7,8 +7,9 @@ from loguru import logger
 
 from data.config import FILES_DIR
 from data.settings import Settings
-from libs.eth_async.client import Client
-from libs.eth_async.data.models import Networks
+from libs.sol_async_py.client import Client
+from libs.sol_async_py.data.models import Networks
+
 from utils.db_api.models import Wallet
 from utils.db_api.wallet_api import db, get_wallet_by_address
 from utils.encryption import check_encrypt_param, get_private_key, prk_encrypt
@@ -72,8 +73,7 @@ class Import:
     def parse_wallet_from_txt() -> List[Dict[str, Optional[str]]]:
         private_keys = read_lines("private_keys.txt")
         proxies = read_lines("proxy.txt")
-        twitter_tokens = read_lines("twitter_tokens.txt")
-        discord_tokens = read_lines("discord_tokens.txt")
+        deposit_addresses = read_lines("deposit_addresses.txt")
 
         if not private_keys:
             raise ValueError("File private_keys.txt must not be empty")
@@ -86,8 +86,7 @@ class Import:
                 {
                     "private_key": private_keys[i],
                     "proxy": parse_proxy(pick_proxy(proxies, i)),
-                    "twitter_token": twitter_tokens[i] if i < len(twitter_tokens) else None,
-                    "discord_token": discord_tokens[i] if i < len(discord_tokens) else None,
+                    "deposit_address": deposit_addresses[i] if i < len(deposit_addresses) else None,
                 }
             )
 
@@ -121,14 +120,14 @@ class Import:
         for wl in wallets:
             decoded_private_key = get_private_key(wl.private_key)
 
-            client = Client(private_key=decoded_private_key, network=Networks.Ethereum)
+            client = Client(private_key=decoded_private_key, network=Networks.Solana)
 
-            wallet_instance = get_wallet_by_address(address=client.account.address)
+            wallet_instance = get_wallet_by_address(address=str(client.account.pubkey()))
 
             if wallet_instance:
                 changed = False
 
-                if wallet_instance.address == client.account.address:
+                if wallet_instance.address == str(client.account.pubkey()):
                     wallet_instance.private_key = prk_encrypt(decoded_private_key) if not "gAAAA" in wl.private_key else wl.private_key
                     changed = True
 
@@ -136,13 +135,13 @@ class Import:
                     wallet_instance.proxy = wl.proxy
                     changed = True
 
-                if hasattr(wallet_instance, "twitter_token") and wallet_instance.twitter_token != wl.twitter_token:
-                    wallet_instance.twitter_token = wl.twitter_token
+                if hasattr(wallet_instance, "deposit_address") and wallet_instance.deposit_address != wl.deposit_address:
+                    wallet_instance.deposit_address = wl.deposit_address
                     changed = True
-
-                if hasattr(wallet_instance, "discord_token") and wallet_instance.discord_token != wl.discord_token:
-                    wallet_instance.discord_token = wl.discord_token
-                    changed = True
+                #
+                # if hasattr(wallet_instance, "discord_token") and wallet_instance.discord_token != wl.discord_token:
+                #     wallet_instance.discord_token = wl.discord_token
+                #     changed = True
 
                 if changed:
                     db.commit()
@@ -153,23 +152,23 @@ class Import:
 
             wallet_instance = Wallet(
                 private_key=prk_encrypt(wl.private_key) if not "gAAAA" in wl.private_key else wl.private_key,
-                address=client.account.address,
+                address=str(client.account.pubkey()),
                 proxy=wl.proxy,
-                twitter_token=wl.twitter_token,
-                discord_token=wl.discord_token,
+                deposit_address=wl.deposit_address,
+                #discord_token=wl.discord_token,
             )
 
             remove_line_from_file(wl.private_key, "private_keys.txt")
 
-            if not wallet_instance.twitter_token:
-                logger.warning(
-                    f"{wallet_instance.id} | {wallet_instance.address} | Twitter Token not found, Twitter Action will be skipped"
-                )
-
-            if not wallet_instance.discord_token:
-                logger.warning(
-                    f"{wallet_instance.id} | {wallet_instance.address} | Discord Token not found, Discord Action will be skipped"
-                )
+            # if not wallet_instance.twitter_token:
+            #     logger.warning(
+            #         f"{wallet_instance.id} | {wallet_instance.address} | Twitter Token not found, Twitter Action will be skipped"
+            #     )
+            #
+            # if not wallet_instance.discord_token:
+            #     logger.warning(
+            #         f"{wallet_instance.id} | {wallet_instance.address} | Discord Token not found, Discord Action will be skipped"
+            #     )
 
             db.insert(wallet_instance)
             imported.append(wallet_instance)
@@ -181,8 +180,8 @@ class Sync:
     @staticmethod
     def parse_tokens_and_proxies_from_txt(wallets: List) -> List[Dict[str, Optional[str]]]:
         proxies = read_lines("proxy.txt")
-        twitter_tokens = read_lines("twitter_tokens.txt")
-        discord_tokens = read_lines("discord_tokens.txt")
+        deposit_address = read_lines("deposit_address.txt")
+        #discord_tokens = read_lines("discord_tokens.txt")
 
         record_count = len(wallets)
 
@@ -191,8 +190,8 @@ class Sync:
             wallet_auxiliary.append(
                 {
                     "proxy": parse_proxy(pick_proxy(proxies, i)),
-                    "twitter_token": twitter_tokens[i] if i < len(twitter_tokens) else None,
-                    "discord_token": discord_tokens[i] if i < len(discord_tokens) else None,
+                    "deposit_address": deposit_address[i] if i < len(deposit_address) else None,
+                    #"discord_token": discord_tokens[i] if i < len(discord_tokens) else None,
                 }
             )
 
@@ -226,9 +225,9 @@ class Sync:
         for wl in wallets:
             decoded_private_key = get_private_key(wl.private_key)
 
-            client = Client(private_key=decoded_private_key, network=Networks.Ethereum)
+            client = Client(private_key=decoded_private_key, network=Networks.Solana)
 
-            wallet_instance = get_wallet_by_address(address=client.account.address)
+            wallet_instance = get_wallet_by_address(address=str(client.account.pubkey()))
 
             if wallet_instance:
                 changed = False
@@ -238,12 +237,8 @@ class Sync:
                     wallet_instance.proxy = wallet_data.proxy
                     changed = True
 
-                if hasattr(wallet_instance, "twitter_token") and wallet_instance.twitter_token != wallet_data.twitter_token:
-                    wallet_instance.twitter_token = wallet_data.twitter_token
-                    changed = True
-
-                if hasattr(wallet_instance, "discord_token") and wallet_instance.discord_token != wallet_data.discord_token:
-                    wallet_instance.discord_token = wallet_data.discord_token
+                if hasattr(wallet_instance, "deposit_address") and wallet_instance.deposit_address != wallet_data.deposit_address:
+                    wallet_instance.twitter_token = wallet_data.deposit_address
                     changed = True
 
                 if changed:
@@ -257,8 +252,7 @@ class Export:
     _FILES = {
         "private_key": "exported_private_keys.txt",
         "proxy": "exported_proxy.txt",
-        "twitter_token": "exported_twitter_tokens.txt",
-        "discord_token": "exported_discord_tokens.txt",
+        "deposit_address": "exported_deposit_address.txt",
     }
 
     @staticmethod
@@ -287,8 +281,7 @@ class Export:
             buf["private_key"].append(prk)
 
             buf["proxy"].append(w.proxy or "")
-            buf["twitter_token"].append(w.twitter_token or "")
-            buf["discord_token"].append(w.discord_token or "")
+            buf["deposit_address"].append(w.deposit_address or "")
 
         for field, filename in Export._FILES.items():
             Export._write_lines(filename, buf[field])

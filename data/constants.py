@@ -1,2 +1,2 @@
-PROJECT_NAME = "Base Architecture"
-PROJECT_SHORT_NAME = "base_arch"
+PROJECT_NAME = "Ranger Finance"
+PROJECT_SHORT_NAME = "ranger_finance"

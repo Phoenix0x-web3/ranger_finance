@@ -9,6 +9,8 @@ from rich.console import Console
 from data.constants import PROJECT_NAME
 from functions.activity import activity
 from utils.create_files import create_files, reset_folder
+from utils.db_api.models import Wallet
+from utils.db_api.wallet_api import db
 from utils.db_import_export_sync import Export, Import, Sync
 from utils.git_version import check_for_updates
 from utils.output import show_channel_info
@@ -17,10 +19,7 @@ console = Console()
 
 
 PROJECT_ACTIONS = [
-    "Start Testing Project",
-    "Start Testing Requests",
-    "Start Testing Web3",
-    "Start Testing Twitter",
+    "1. Start SPOT Activity (swaps)",
     "Back",
 ]
 
@@ -78,17 +77,8 @@ async def choose_action():
         console.print(f"[bold blue]Starting Import Wallets to DB[/bold blue]")
         await Export.wallets_to_txt()
 
-    elif action == "Start Testing Project":
+    elif "1." in action:
         await activity(action=1)
-
-    elif action == "Start Testing Requests":
-        await activity(action=2)
-
-    elif action == "Start Testing Web3":
-        await activity(action=3)
-
-    elif action == "Start Testing Twitter":
-        await activity(action=4)
 
     elif action == "1. Reset files Folder":
         console.print("This action will delete the files folder and reset it.")
@@ -106,7 +96,7 @@ async def choose_action():
 
 async def main():
     create_files()
-
+    db.ensure_model_columns(Wallet)
     await check_for_updates(repo_name=PROJECT_NAME)
     await choose_action()
 
