@@ -197,7 +197,7 @@ class RangerFinance(Base):
             if max_fee_sol > 0.0005 and not any_token_is_sol and from_token_ata and to_token_ata:
 
                 logger.warning(
-                    f"{self.wallet} | {self.__module_name__} | Onchain fee too high ({max_fee_sol:.6f} SOL), "
+                    f"{self.wallet} | {self.__module_name__} | Onchain fee too high ({max_fee_sol:.7f} SOL), "
                     f"replacing with custom budget"
                 )
 
@@ -289,7 +289,7 @@ class RangerFinance(Base):
                 pass
 
             finally:
-                return f"Success | Swapped {amount} {from_token} to {output} {to_token} | Ranger fee {ranger_fee} USD | Onchain fee {max_fee_sol} sol | sent tx {resp}"
+                return f"Success | Swapped {amount} {from_token} to {output} {to_token} | Ranger fee {ranger_fee} USD | Onchain fee {max_fee_sol:.7f} sol | sent tx {resp}"
 
         raise Exception(f'Something Wrong in {resp}')
 
@@ -352,7 +352,7 @@ class RangerFinance(Base):
         r.raise_for_status()
         return True
 
-
+    @controller_log('Apply Refferal Link')
     async def apply_referral(self, invite_code = None):
 
         if not self.cookies:
@@ -362,7 +362,7 @@ class RangerFinance(Base):
 
         sig = self.client.account.sign_message(message=message.encode('utf-8'))
 
-        codes = Settings().invite_codes[0]
+        codes = Settings().invite_codes
 
         invite_code = random.choice(codes)
 
@@ -380,7 +380,6 @@ class RangerFinance(Base):
             "signature": str(sig)
         }
 
-
         r = await self.browser.post(
             url='https://www.app.ranger.finance/api/referral/post-referral',
             json=payload,
@@ -388,7 +387,7 @@ class RangerFinance(Base):
             cookies=self.cookies
         )
 
-        return r.json().get('referred_status')
+        return r.json().get('data').get('referred_status')
 
     async def get_refferal_status(self):
 

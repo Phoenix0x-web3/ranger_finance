@@ -51,11 +51,11 @@ async def swaps_activity_task(wallet):
                         logger.error(status)
 
                 except Exception as e:
-                    logger.error(e)
+                    logger.exception(e)
                     continue
 
                 finally:
-                    logger.info(f'{wallet} | Started sleep {sleep} sec for next action | {len(actions) -1} actions to do')
+                    logger.info(f'{wallet} | Started sleep {sleep} sec for next action....')
                     await asyncio.sleep(sleep)
 
         await controller.update_db_by_user_info()

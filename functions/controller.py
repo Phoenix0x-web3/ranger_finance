@@ -104,7 +104,10 @@ class Controller:
         raise Exception(f"Cannot refill SOL, balances in tokens lower that {refill_amount} -- {token_balances}")
 
     @controller_log(f'Initial Swap')
-    async def make_first_swap(self, for_comissions, balance):
+    async def make_first_swap(self, for_comissions):
+
+        balance = await self.client.wallet.balance()
+
 
         amount = TokenAmount(
             amount=float(balance.Ether) - for_comissions
@@ -139,8 +142,8 @@ class Controller:
         any_token_balances = [t for t in list(balance_map.values()) if float(t.Ether) > 10]
 
         if not any_token_balances:
-            initial_swap = await self.make_first_swap(for_comissions=settings.sol_balance_for_commissions,
-                                                              balance=balance)
+            initial_swap = await self.make_first_swap(for_comissions=settings.sol_balance_for_commissions)
+
             logger.success(initial_swap)
 
         ref_status = await self.ranger.get_refferal_status()
