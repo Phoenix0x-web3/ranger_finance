@@ -257,16 +257,23 @@ class RangerFinance(Base):
 
             try:
                 sol_price = await self.get_token_price(token_symbol='SOL')
+
                 max_fee_usd = max_fee_sol * sol_price
 
                 volume = float(output.Ether)
+                slippage_lost_usd = float(amount.Ether) - volume
 
                 if to_token == TokenContracts.SOL:
                     volume = float(output.Ether) * sol_price
 
+                if from_token == TokenContracts.SOL:
+                    volume = float(amount.Ether) * sol_price
+                    slippage_lost_usd = float(amount.Ether) * sol_price - float(output.Ether)
+
                 self.wallet.sol_fees_usd = round(self.wallet.sol_fees_usd + max_fee_usd, 3)
                 self.wallet.ranger_fees = round(self.wallet.ranger_fees + float(ranger_fee.Ether), 3)
-                self.wallet.summary_fees = self.wallet.sol_fees_usd + self.wallet.ranger_fees
+                self.wallet.slippage_lost_usd = round(self.wallet.slippage_lost_usd + slippage_lost_usd, 3)
+                self.wallet.summary_fees = self.wallet.sol_fees_usd + self.wallet.ranger_fees + self.wallet.slippage_lost_usd
                 self.wallet.volume_onchain = self.wallet.volume_onchain + int(volume)
 
                 db.commit()

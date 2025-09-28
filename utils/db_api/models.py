@@ -18,7 +18,7 @@ class Wallet(Base):
     deposit_address: Mapped[str] = mapped_column(default=None, nullable=True)
     sol_fees_usd: Mapped[float] = mapped_column(default=0.0)
     ranger_fees: Mapped[float] = mapped_column(default=0.0)
-    summary_fees: Mapped[float] = mapped_column(default=0.0)
+    slippage_lost_usd: Mapped[float] = mapped_column(default=0.0)
     volume_onchain: Mapped[int] = mapped_column(default=0)
     points: Mapped[int] = mapped_column(default=0)
     rank: Mapped[str] = mapped_column(default="")
