@@ -282,7 +282,7 @@ class RangerFinance(Base):
                 pass
 
             finally:
-                return f"Success | Swapped {amount} {from_token} to {output} {to_token} | Ranger fee {ranger_fee} USD | Onchain fee {max_fee_sol:.7f} sol | sent tx {resp}"
+                return f"Success | Swapped {amount} {from_token} to {output} {to_token} | Ranger fee {ranger_fee} USD | Onchain fee {max_fee_sol:.7f} sol | via {quote['provider']} |sent tx {resp}"
 
         raise Exception(f'Something Wrong in {resp}')
 
