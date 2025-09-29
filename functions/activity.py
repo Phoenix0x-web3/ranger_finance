@@ -50,7 +50,7 @@ async def swaps_activity_task(wallet):
                         logger.error(status)
 
                 except Exception as e:
-                    logger.exception(e)
+                    logger.error(e)
                     continue
 
                 finally:
