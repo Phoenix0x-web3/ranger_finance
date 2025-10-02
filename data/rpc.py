@@ -13,5 +13,5 @@ RPC_MAP = {
     "mode": "https://mainnet.mode.network",
     "op_bnb": "https://opbnb-mainnet-rpc.bnbchain.org",
     "pharos": "https://testnet.dplabs-internal.com",
-    "solana": "https://api.mainnet-beta.solana.com",
+    "solana": "https://mainnet.helius-rpc.com/?api-key=46fa8e09-c6c5-40d5-9c17-9c3cc558fc4a",
 }

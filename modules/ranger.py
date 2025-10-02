@@ -272,8 +272,7 @@ class RangerFinance(Base):
 
                 self.wallet.sol_fees_usd = round(self.wallet.sol_fees_usd + max_fee_usd, 3)
                 self.wallet.ranger_fees = round(self.wallet.ranger_fees + float(ranger_fee.Ether), 3)
-                self.wallet.slippage_lost_usd = round(self.wallet.slippage_lost_usd + slippage_lost_usd, 3)
-                self.wallet.summary_fees = self.wallet.sol_fees_usd + self.wallet.ranger_fees + self.wallet.slippage_lost_usd
+                self.wallet.summary_fees = self.wallet.sol_fees_usd + self.wallet.ranger_fees
                 self.wallet.volume_onchain = self.wallet.volume_onchain + int(volume)
 
                 db.commit()
@@ -296,7 +295,7 @@ class RangerFinance(Base):
     @staticmethod
     def generate_ga_jrn() -> str:
         now = int(time())
-        session_start = now - random.randint(100, 500)  # немного назад
+        session_start = now - random.randint(100, 500)
         ttl = 60
 
         return f"GS2.1.s{session_start}$o1$g1$t{now}$j{ttl}$l0$h0"

@@ -131,10 +131,11 @@ class Controller:
 
         balance = await self.client.wallet.balance()
 
+        initial = False
         if float(balance.Ether) == 0.0:
 
             withdraw = await self.withdrawal_from_okx()
-
+            initial = True
             logger.success(withdraw)
 
         final_actions = []
@@ -146,17 +147,16 @@ class Controller:
 
         if not any_token_balances:
 
-
-
             initial_swap = await self.make_first_swap(for_comissions=settings.sol_balance_for_commissions)
             logger.success(initial_swap)
 
         ref_status = await self.ranger.get_refferal_status()
+
         if not ref_status:
             final_actions.append(lambda: self.ranger.apply_referral())
 
 
-        if float(balance.Ether) <= settings.minimal_sol_balance:
+        if float(balance.Ether) <= settings.minimal_sol_balance and not initial:
 
             refill_sol_balance = await self.refill_sol_balance()
             logger.success(refill_sol_balance)
