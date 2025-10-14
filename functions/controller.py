@@ -26,8 +26,6 @@ class Controller:
     async def update_db_by_user_info(self):
         rank = await self.ranger.get_leaderboard_rank()
 
-        print(rank)
-
         if rank:
             self.wallet.rank = rank.get('position')
             self.wallet.volume_portal = rank.get('total_volume')
