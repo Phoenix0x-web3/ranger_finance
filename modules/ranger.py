@@ -496,34 +496,37 @@ class RangerFinance(Base):
 
         sig = self.client.account.sign_message(message=message.encode('utf-8'))
 
+        #todo select - db or settings
         codes = Settings().invite_codes
 
-        invite_code = random.choice(codes)
+        if codes:
+            invite_code = random.choice(codes)
 
-        headers = {
-            **self.base_headers,
-            'accept': '*/*',
-            'accept-language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7',
-            'content-type': 'text/plain;charset=UTF-8',
-            'origin': 'https://www.app.ranger.finance',
-        }
+            headers = {
+                **self.base_headers,
+                'accept': '*/*',
+                'accept-language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7',
+                'content-type': 'text/plain;charset=UTF-8',
+                'origin': 'https://www.app.ranger.finance',
+            }
 
-        payload = {
-            'publicKey': str(self.client.account.pubkey()),
-            'privy_id': self.privy_id,
-            "code": invite_code,
-            "signature": str(sig)
-        }
+            payload = {
+                'publicKey': str(self.client.account.pubkey()),
+                'privy_id': self.privy_id,
+                "code": invite_code,
+                "signature": str(sig)
+            }
 
-        r = await self.browser.post(
-            url='https://www.app.ranger.finance/api/referral/post-referral',
-            json=payload,
-            headers=headers,
-            cookies=self.cookies
-        )
+            r = await self.browser.post(
+                url='https://www.app.ranger.finance/api/referral/post-referral',
+                json=payload,
+                headers=headers,
+                cookies=self.cookies
+            )
 
-        return r.json().get('data').get('referred_status')
-
+            return r.json().get('data').get('referred_status')
+        else:
+            return 'No Refferal Code provided in settings'
     async def get_refferal_status(self):
 
         if not self.cookies:
