@@ -21,7 +21,7 @@ async def random_sleep_before_start(wallet):
     logger.info(f"{wallet} Start at {now + timedelta(seconds=random_sleep)} sleep {random_sleep} seconds before start actions")
     await asyncio.sleep(random_sleep)
 
-async def swaps_activity_task(wallet):
+async def update_statistics(wallet):
 
     try:
         await random_sleep_before_start(wallet=wallet)
@@ -35,7 +35,7 @@ async def swaps_activity_task(wallet):
         logger.error(f'Core | Activity | {wallet} | {e}')
         raise e
 
-async def update_statistics(wallet):
+async def swaps_activity_task(wallet):
 
     try:
         await random_sleep_before_start(wallet=wallet)
