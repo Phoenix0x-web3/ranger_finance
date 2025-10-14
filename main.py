@@ -20,6 +20,7 @@ console = Console()
 
 PROJECT_ACTIONS = [
     "1. Start SPOT Activity (swaps)",
+    "2. Update wallet statistics from app.ranger.finance",
     "Back",
 ]
 
@@ -79,6 +80,9 @@ async def choose_action():
 
     elif "1." in action:
         await activity(action=1)
+
+    elif "2." in action:
+        await activity(action=2)
 
     elif action == "1. Reset files Folder":
         console.print("This action will delete the files folder and reset it.")

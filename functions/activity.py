@@ -29,6 +29,20 @@ async def swaps_activity_task(wallet):
         client = Client(private_key=wallet.private_key, network=Networks.Solana, proxy=wallet.proxy)
         controller = Controller(client=client, wallet=wallet)
 
+        stats = await controller.update_db_by_user_info()
+
+    except Exception as e:
+        logger.error(f'Core | Activity | {wallet} | {e}')
+        raise e
+
+async def update_statistics(wallet):
+
+    try:
+        await random_sleep_before_start(wallet=wallet)
+
+        client = Client(private_key=wallet.private_key, network=Networks.Solana, proxy=wallet.proxy)
+        controller = Controller(client=client, wallet=wallet)
+
         actions = await controller.build_actions()
 
         if isinstance(actions, str):
@@ -115,5 +129,12 @@ async def activity(action: int):
         await execute(
             wallets,
             swaps_activity_task,
+            random.randint(Settings().random_pause_wallet_after_completion_min, Settings().random_pause_wallet_after_completion_max),
+        )
+
+    if action == 2:
+        await execute(
+            wallets,
+            update_statistics,
             random.randint(Settings().random_pause_wallet_after_completion_min, Settings().random_pause_wallet_after_completion_max),
         )

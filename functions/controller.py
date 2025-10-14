@@ -34,6 +34,7 @@ class Controller:
             self.wallet.points = rank.get('total_points')
             db.commit()
 
+        logger.info(f"{self.wallet} -> Rank: {self.wallet.rank } | Volume: {self.wallet.volume_portal} | Points: {self.wallet.points } ")
         return
 
     @controller_log('OKX Withdrawal')
