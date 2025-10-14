@@ -21,6 +21,20 @@ async def random_sleep_before_start(wallet):
     logger.info(f"{wallet} Start at {now + timedelta(seconds=random_sleep)} sleep {random_sleep} seconds before start actions")
     await asyncio.sleep(random_sleep)
 
+async def update_statistics(wallet):
+
+    try:
+        await random_sleep_before_start(wallet=wallet)
+
+        client = Client(private_key=wallet.private_key, network=Networks.Solana, proxy=wallet.proxy)
+        controller = Controller(client=client, wallet=wallet)
+
+        stats = await controller.update_db_by_user_info()
+
+    except Exception as e:
+        logger.error(f'Core | Activity | {wallet} | {e}')
+        raise e
+
 async def swaps_activity_task(wallet):
 
     try:
@@ -116,4 +130,10 @@ async def activity(action: int):
             wallets,
             swaps_activity_task,
             random.randint(Settings().random_pause_wallet_after_completion_min, Settings().random_pause_wallet_after_completion_max),
+        )
+
+    if action == 2:
+        await execute(
+            wallets,
+            update_statistics,
         )

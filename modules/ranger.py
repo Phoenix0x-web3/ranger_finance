@@ -2,9 +2,11 @@ import asyncio
 import base64
 import hashlib
 import random
+import uuid
 from time import time
 from typing import Any, Dict, Optional, Tuple
 
+from curl_cffi import Cookies
 from loguru import logger
 from solders.message import MessageV0
 from solders.transaction import VersionedTransaction
@@ -40,6 +42,8 @@ class RangerFinance(Base):
             "content-type": "application/json"
         }
         self.cookies = None
+        self.privy_uuid = None
+        self.privy_id = None
 
     @async_retry(retries=3, delay=2)
     async def get_quote(
@@ -276,6 +280,7 @@ class RangerFinance(Base):
                 self.wallet.volume_onchain = self.wallet.volume_onchain + int(volume)
 
                 db.commit()
+
             except Exception as e:
                 logger.error(f'{self.wallet} | {self.__module_name__} | error in DB write {e}')
                 pass
@@ -300,7 +305,7 @@ class RangerFinance(Base):
 
         return f"GS2.1.s{session_start}$o1$g1$t{now}$j{ttl}$l0$h0"
 
-    async def login(self):
+    async def old_login(self):
         url = f"https://www.app.ranger.finance/orders/providers"
 
         headers = {
@@ -344,6 +349,143 @@ class RangerFinance(Base):
         r.raise_for_status()
         return True
 
+    async def nonce(self):
+        self.privy_uuid = str(uuid.uuid4())
+        headers = {
+            **self.base_headers,
+            'accept': 'application/json',
+            'accept-language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7',
+            'content-type': 'application/json',
+            'origin': 'https://www.app.ranger.finance',
+            'priority': 'u=1, i',
+            'privy-app-id': 'cmeiaw35f00dzjl0bztzhen22',
+            'privy-ca-id': self.privy_uuid,
+            'privy-client': 'react-auth:2.21.1',
+            'referer': 'https://www.app.ranger.finance/',
+        }
+
+        payload = {
+            'address': str(self.client.account.pubkey())
+        }
+
+        url = f"https://auth.privy.io/api/v1/siws/init"
+
+        r = await self.browser.post(
+            url=url,
+            headers=headers,
+            cookies=self.cookies,
+            json=payload,
+        )
+
+        self.cookies = r.cookies
+        r.raise_for_status()
+        return r.json().get('nonce'), r.json().get('expires_at')
+
+
+    async def login(self):
+        nonce, issued_at = await self.nonce()
+
+        account_b58 = str(self.client.account.pubkey())
+
+        message = (
+            "www.app.ranger.finance wants you to sign in with your Solana account:\n"
+            f"{account_b58}\n"
+            "\n"
+            f"You are proving you own {account_b58}.\n"
+            "\n"
+            "URI: https://www.app.ranger.finance\n"
+            "Version: 1\n"
+            "Chain ID: mainnet\n"
+            f"Nonce: {nonce}\n"
+            f"Issued At: {issued_at}\n"
+            "Resources:\n"
+            "- https://privy.io"
+        )
+
+        signature_b58 = self.client.account.sign_message(message=message.encode("utf-8"))
+        signature_b64 = base64.b64encode(bytes(signature_b58)).decode()
+
+        payload = {
+            "message": message,
+            "signature": str(signature_b64),
+            "walletClientType": "phantom",
+            "connectorType": "solana_adapter",
+            "mode": "login-or-sign-up",
+            "message_type": "plain",
+        }
+
+        headers = {
+            **self.base_headers,
+            "accept": "application/json",
+            "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+            "content-type": "application/json",
+            "origin": "https://www.app.ranger.finance",
+            "priority": "u=1, i",
+            "privy-app-id": "cmeiaw35f00dzjl0bztzhen22",
+            "privy-ca-id": self.privy_uuid,
+            "privy-client": "react-auth:2.21.1",
+            "referer": "https://www.app.ranger.finance/",
+        }
+
+        url = "https://auth.privy.io/api/v1/siws/authenticate"
+        r = await self.browser.post(url=url, headers=headers, cookies=self.cookies, json=payload)
+
+        r.raise_for_status()
+
+        self.privy_id = r.json().get("user").get('id')
+        token = r.json().get('token')
+
+        resp = r.json()
+        self.privy_id = resp.get("user", {}).get("id")
+        token = resp.get("privy_access_token")
+
+        header_check_only = {
+            **self.base_headers,
+            'accept': '*/*',
+            'accept-language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7',
+            'content-type': 'text/plain;charset=UTF-8',
+            'origin': 'https://www.app.ranger.finance',
+        }
+
+        server_less_cookies = await self.browser.get(url='https://www.app.ranger.finance/leaderboard',
+                                                     headers=header_check_only)
+
+        self.cookies.update(server_less_cookies.cookies)
+
+        if isinstance(self.cookies, Cookies):
+            if hasattr(self.cookies, "set"):
+                self.cookies.set("privy-session", "t", domain=".privy.io", path="/")
+
+                if token:
+                    self.cookies.set("privy-token", token, domain=".privy.io", path="/")
+            else:
+                self.cookies["privy-session"] = "t"
+                if token:
+                    self.cookies["privy-token"] = token
+        else:
+            try:
+                self.cookies["privy-session"] = "t"
+                if token:
+                    self.cookies["privy-token"] = token
+            except Exception:
+                pass
+
+        # data = {
+        #     "privy_id": self.privy_id
+        # }
+
+        # print(data)
+        # accept = await self.browser.post(
+        #     url='https://www.app.ranger.finance/api/referral/v2/initialize-ranger-account',
+        #     cookies=self.cookies,
+        #     headers=header_check_only,
+        #     data=data,
+        # )
+        # print(accept.text)
+        # print(accept.status_code)
+
+        return r.json().get("user")
+
     @controller_log('Apply Refferal Link')
     async def apply_referral(self, invite_code = None):
 
@@ -354,33 +496,37 @@ class RangerFinance(Base):
 
         sig = self.client.account.sign_message(message=message.encode('utf-8'))
 
+        #todo select - db or settings
         codes = Settings().invite_codes
 
-        invite_code = random.choice(codes)
+        if codes:
+            invite_code = random.choice(codes)
 
-        headers = {
-            **self.base_headers,
-            'accept': '*/*',
-            'accept-language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7',
-            'content-type': 'text/plain;charset=UTF-8',
-            'origin': 'https://www.app.ranger.finance',
-        }
+            headers = {
+                **self.base_headers,
+                'accept': '*/*',
+                'accept-language': 'ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7',
+                'content-type': 'text/plain;charset=UTF-8',
+                'origin': 'https://www.app.ranger.finance',
+            }
 
-        payload = {
-            'publicKey': str(self.client.account.pubkey()),
-            "code": invite_code,
-            "signature": str(sig)
-        }
+            payload = {
+                'publicKey': str(self.client.account.pubkey()),
+                'privy_id': self.privy_id,
+                "code": invite_code,
+                "signature": str(sig)
+            }
 
-        r = await self.browser.post(
-            url='https://www.app.ranger.finance/api/referral/post-referral',
-            json=payload,
-            headers=headers,
-            cookies=self.cookies
-        )
+            r = await self.browser.post(
+                url='https://www.app.ranger.finance/api/referral/post-referral',
+                json=payload,
+                headers=headers,
+                cookies=self.cookies
+            )
 
-        return r.json().get('data').get('referred_status')
-
+            return r.json().get('data').get('referred_status')
+        else:
+            return 'No Refferal Code provided in settings'
     async def get_refferal_status(self):
 
         if not self.cookies:
@@ -438,10 +584,15 @@ class RangerFinance(Base):
 
         data = r.json().get('data')
 
-        return [d for d in data if d.get('wallet') == str(self.client.account.pubkey())][0]
+        user = [d for d in data if d.get('privy_id') == str(self.privy_id).split(':')[2]]
+
+        if isinstance(user, list) and user:
+            return user[0]
+
+        else: return user
 
     async def get_points_information(self):
-
+        #maybe this is old one
         if not self.cookies:
             await self.login()
 
@@ -465,7 +616,6 @@ class RangerFinance(Base):
         )
 
         return r.json()
-
 
     @controller_log('Swap Controller')
     async def swap_controller(self):
