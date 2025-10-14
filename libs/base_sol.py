@@ -46,13 +46,6 @@ class Base:
         if token_symbol == "USDC.E":
             token_symbol = "USDC"
 
-        token_id = {
-            "SOL": 'solana',
-            "USDC": 'usd-coin',
-            "USDT": 'tether',
-            "tETH": 'ethereum'
-        }
-
         if token_symbol in ["USDC", "USDT"]:
             return 1.0
 
