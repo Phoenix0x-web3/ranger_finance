@@ -32,7 +32,10 @@ class Controller:
             self.wallet.points = rank.get('total_points')
             db.commit()
 
-        logger.info(f"{self.wallet} -> Rank: {self.wallet.rank } | Volume: {self.wallet.volume_portal} | Points: {self.wallet.points } ")
+        logger.info(f"{self.wallet} -> "
+                    f"Rank: [{self.wallet.rank}] | "
+                    f"Volume: [{self.wallet.volume_portal:.2f}] | "
+                    f"Points: [{self.wallet.points:.2f}] ")
         return
 
     @controller_log('OKX Withdrawal')
@@ -42,7 +45,6 @@ class Controller:
         amount = randfloat(from_=settings.withdrawal_amount_min,
                            to_=settings.withdrawal_amount_max,
                            step=0.001)
-
 
         okx = OKXActions(credentials=okx_credentials)
 
