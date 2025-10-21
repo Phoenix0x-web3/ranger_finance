@@ -6,9 +6,9 @@ private_key_encryption: true
 # Number of threads to use for processing wallets
 threads: 1
 
-#BY DEFAULT: [0,0] - all wallets
-#Example: [2, 6] will run wallets 2,3,4,5,6
-#[4,4] will run only wallet 4
+# BY DEFAULT: [0,0] - all wallets
+# Example: [2, 6] will run wallets 2,3,4,5,6
+# [4,4] will run only wallet 4
 range_wallets_to_run: [0,0]
 
 # Whether to shuffle the list of wallets before processing
@@ -25,13 +25,13 @@ show_wallet_address_logs: false
 #Check for github updates
 check_git_updates: true
 
-# the log level for the application. Options: DEBUG, INFO, WARNING, ERROR
+# The log level for the application. Options: DEBUG, INFO, WARNING, ERROR
 log_level : INFO
 
-# Delay before running the same wallet again after it has completed all actions (1 - 2 hrs default)
+# Delay before running the new cicle of wallets after it has completed all actions (12 - 24 hrs default)
 random_pause_wallet_after_completion:
-  min: 7200
-  max: 10800
+  min: 43200
+  max: 86400
 
 # Random pause between wallets in seconds
 random_pause_between_wallets:
@@ -48,31 +48,31 @@ random_pause_start_wallet:
   min: 0
   max: 60
 
-#OKX api keys
+# OKX api keys
 okx_api_key: ''
 okx_api_secret: ''
 okx_passphrase: ''
 
-#Withdrawal amount in SOL
+# Withdrawal amount in SOL from okx
 withdrawal_amount:
   min: 0.8
   max: 1
 
-#Percent for SOL commissions:
+# Keeping SOL amount in the wallet for transaction fees after witdrawal from okx
 sol_balance_for_commissions: 0.05
 
-#Minimal Sol Balance to refill SOL for comission
+# Minimum SOL to keep in the wallet and when to refill it by swapping from stables for network fees. See refill_usd_amount
 minimal_sol_balance: 0.005
 
-#Refill Sol for commission in usd
+# Refill SOL for transaction fees in usd
 refill_usd_amount:
   min: 8
   max: 10
 
-#Swaps count per cycle on SPOT
+# Swaps count per cycle on SPOT
 swaps_count:
   min: 5
   max: 10
 
-#Invite codes
+# Referral codes
 invite_codes: []
