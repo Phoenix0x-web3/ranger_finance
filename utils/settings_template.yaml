@@ -59,7 +59,9 @@ withdrawal_amount:
   max: 1
 
 # Keeping SOL amount in the wallet for transaction fees after witdrawal from okx
-sol_balance_for_commissions: 0.05
+sol_balance_for_commissions:
+  min: 0.05
+  max: 0.08
 
 # Minimum SOL to keep in the wallet and when to refill it by swapping from stables for network fees. See refill_usd_amount
 minimal_sol_balance: 0.005

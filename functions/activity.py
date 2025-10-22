@@ -21,6 +21,36 @@ async def random_sleep_before_start(wallet):
     logger.info(f"{wallet} Start at {now + timedelta(seconds=random_sleep)} sleep {random_sleep} seconds before start actions")
     await asyncio.sleep(random_sleep)
 
+async def swap_sol_to_stable(wallet):
+
+    try:
+        await random_sleep_before_start(wallet=wallet)
+
+        client = Client(private_key=wallet.private_key, network=Networks.Solana, proxy=wallet.proxy)
+        controller = Controller(client=client, wallet=wallet)
+
+        stats = await controller.swap_to_stables()
+        logger.success(stats)
+
+    except Exception as e:
+        logger.error(f'Core | Activity | {wallet} | {e}')
+        raise e
+
+async def withdraw_and_swap(wallet):
+
+    try:
+        await random_sleep_before_start(wallet=wallet)
+
+        client = Client(private_key=wallet.private_key, network=Networks.Solana, proxy=wallet.proxy)
+        controller = Controller(client=client, wallet=wallet)
+
+        stats = await controller.perform_withdraw_and_swap_to_stables()
+        logger.success(stats)
+
+    except Exception as e:
+        logger.error(f'Core | Withdraw and Swap | {wallet} | {e}')
+        raise e
+
 async def update_statistics(wallet):
 
     try:
@@ -109,7 +139,6 @@ async def execute(wallets: List[Wallet], task_func, random_pause_wallet_after_co
         logger.info(f"Sleeping {random_pause_wallet_after_completion} seconds. Next run at: {next_run.strftime('%Y-%m-%d %H:%M:%S')}")
         await asyncio.sleep(random_pause_wallet_after_completion)
 
-
 async def activity(action: int):
     if not check_encrypt_param():
         logger.error(f"Decryption Failed | Wrong Password")
@@ -133,6 +162,16 @@ async def activity(action: int):
         )
 
     if action == 2:
+        await execute(
+            wallets,
+            withdraw_and_swap,
+        )
+    if action == 3:
+        await execute(
+            wallets,
+            swap_sol_to_stable,
+        )
+    if action == 4:
         await execute(
             wallets,
             update_statistics,
