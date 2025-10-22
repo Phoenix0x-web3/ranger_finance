@@ -69,7 +69,7 @@ class Controller:
 
             balance = await self.client.wallet.balance()
 
-            while float(balance.Ether) < amount:
+            while float(balance.Ether) < (amount - 0.003):
 
                 sleep = random.randint(20,30)
                 logger.warning(f"{self.wallet} | OKX | awaiting balance, retry in {sleep} sec..")
@@ -129,6 +129,31 @@ class Controller:
             amount=amount
         )
 
+    async def perform_withdraw_and_swap_to_stables(self):
+        settings = Settings()
+
+        withdraw = await self.withdrawal_from_okx()
+        logger.success(withdraw)
+
+        min_sol_for_comission = randfloat(
+            from_=settings.sol_balance_for_commissions_min,
+            to_=settings.sol_balance_for_commissions_max,
+            step=0.001
+        )
+
+        initial_swap = await self.make_first_swap(for_comissions=min_sol_for_comission)
+
+        return initial_swap
+
+    async def swap_to_stables(self):
+        settings = Settings()
+        min_sol_for_comission = randfloat(
+            from_=settings.sol_balance_for_commissions_min,
+            to_=settings.sol_balance_for_commissions_max,
+            step=0.001
+        )
+        return await self.make_first_swap(for_comissions=min_sol_for_comission)
+
     async def build_actions(self):
         settings = Settings()
 
@@ -151,8 +176,13 @@ class Controller:
         any_token_balances = [t for t in list(balance_map.values()) if float(t.Ether) > 10]
 
         if not any_token_balances:
+            min_sol_for_comission = randfloat(
+                from_=settings.sol_balance_for_commissions_min,
+                to_=settings.sol_balance_for_commissions_max,
+                step=0.001
+            )
 
-            initial_swap = await self.make_first_swap(for_comissions=settings.sol_balance_for_commissions)
+            initial_swap = await self.make_first_swap(for_comissions=min_sol_for_comission)
             logger.success(initial_swap)
 
         ref_status = await self.ranger.get_refferal_status()
