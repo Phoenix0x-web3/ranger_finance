@@ -76,5 +76,5 @@ swaps_count:
   min: 5
   max: 10
 
-# Referral codes
+# Referral codes. Example [e78f718561cf35o1a34f942c955b337c, ea8f767170ff45f1a1f942c955b397b]
 invite_codes: []
