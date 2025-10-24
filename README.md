@@ -16,11 +16,13 @@ Ranger Finance is a DeFi protocol built on Solana that aggregates liquidity acro
 - Withdraw SOL from okx
 - Swap SOL with stables
 - Swap USDC/USDT
-- 
+- Withdraw additional SOL to wallets
+- Swap all SOL to UDST/USDC
+- Update wallet statistics from app.ranger.finance
 
 ## Requirements
 - Python version 3.12 
-- Private keys EVM
+- Private keys Solana
 - Proxy (optional)
 
 
@@ -68,9 +70,8 @@ ranger_finance/
 ## Configuration
 
 ### 1. files folder
-- `private_keys.txt`: Private keys EVM
+- `private_keys.txt`: Private keys Solana
 - `proxy.txt`: One proxy per line (format: `http://user:pass@ip:port`)
-- `deposit_addresses.txt`: One address per line 
 
 
 ### 2. Main configurations
@@ -81,9 +82,9 @@ private_key_encryption: true
 # Number of threads to use for processing wallets
 threads: 1
 
-#BY DEFAULT: [0,0] - all wallets
-#Example: [2, 6] will run wallets 2,3,4,5,6
-#[4,4] will run only wallet 4
+# BY DEFAULT: [0,0] - all wallets
+# Example: [2, 6] will run wallets 2,3,4,5,6
+# [4,4] will run only wallet 4
 range_wallets_to_run: [0,0]
 
 # Whether to shuffle the list of wallets before processing
@@ -97,7 +98,7 @@ exact_wallets_to_run: []
 # Show wallet address in logs
 show_wallet_address_logs: false
 
-# Check for github updates
+#Check for github updates
 check_git_updates: true
 
 # The log level for the application. Options: DEBUG, INFO, WARNING, ERROR
@@ -133,10 +134,12 @@ withdrawal_amount:
   min: 0.8
   max: 1
 
-# Amount of SOL kept for transaction fees
-sol_balance_for_commissions: 0.05
+# Keeping SOL amount in the wallet for transaction fees after witdrawal from okx
+sol_balance_for_commissions:
+  min: 0.05
+  max: 0.08
 
-# Minimum SOL balance to refill via swap from stables for fees
+# Minimum SOL to keep in the wallet and when to refill it by swapping from stables for network fees. See refill_usd_amount
 minimal_sol_balance: 0.005
 
 # Refill SOL for transaction fees in usd
@@ -149,7 +152,7 @@ swaps_count:
   min: 5
   max: 10
 
-# Referral codes
+# Referral codes. Example [e78f718561cf35o1a34f942c955b337c, ea8f767170ff45f1a1f942c955b397b]
 invite_codes: []
 ```
 
@@ -171,9 +174,14 @@ If you want to update proxy/twitter/discord/email you need to make synchronize w
 
 Once the database is created, you can start the project by selecting `Ranger Finance → Start SPOT Activity (swaps)`.
 
-<img src="https://imgur.com/dDU3ETf.png" alt="Preview" width="600"/>
+<img src="https://imgur.com/9E62t3a.png" alt="Preview" width="600"/>
 
-
+1. `Start SPOT Activity (swaps)`- If your wallet has no assets on first run, the script will withdraw SOL from OKX and swap SOL to stablecoins, leaving a small amount of SOL (`sol_balance_for_commissions`) reserved for transaction fees.
+Then it will perform swaps between USDT and USDC.
+If your wallet already has stablecoins and SOL, the script will only perform swaps using the existing stablecoins.
+2. `Withdraw additional SOL to wallets` - The script withdraws SOL from OKX to your wallet.
+3. `Swap all SOL to UDST/USDC` - The script swaps all available SOL in your wallet to stablecoins, leaving only the amount needed for fees (`sol_balance_for_commissions`).
+4. `Update wallet statistics from app.ranger.finance` - The script retrieves and updates your wallet statistics from the Ranger Finance leaderboard in your database.
 
 
 
