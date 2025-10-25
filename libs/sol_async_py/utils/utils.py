@@ -2,8 +2,7 @@ import random
 from decimal import Decimal
 
 
-def randfloat(from_: int | float | str, to_: int | float | str,
-              step: int | float | str | None = None) -> float:
+def randfloat(from_: int | float | str, to_: int | float | str, step: int | float | str | None = None) -> float:
     """
     Return a random float from the range.
 

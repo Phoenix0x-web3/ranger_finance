@@ -21,8 +21,8 @@ async def random_sleep_before_start(wallet):
     logger.info(f"{wallet} Start at {now + timedelta(seconds=random_sleep)} sleep {random_sleep} seconds before start actions")
     await asyncio.sleep(random_sleep)
 
-async def swap_sol_to_stable(wallet):
 
+async def swap_sol_to_stable(wallet):
     try:
         await random_sleep_before_start(wallet=wallet)
 
@@ -33,11 +33,11 @@ async def swap_sol_to_stable(wallet):
         logger.success(stats)
 
     except Exception as e:
-        logger.error(f'Core | Activity | {wallet} | {e}')
+        logger.error(f"Core | Activity | {wallet} | {e}")
         raise e
 
-async def withdraw_and_swap(wallet):
 
+async def withdraw_and_swap(wallet):
     try:
         await random_sleep_before_start(wallet=wallet)
 
@@ -48,25 +48,25 @@ async def withdraw_and_swap(wallet):
         logger.success(stats)
 
     except Exception as e:
-        logger.error(f'Core | Withdraw and Swap | {wallet} | {e}')
+        logger.error(f"Core | Withdraw and Swap | {wallet} | {e}")
         raise e
 
-async def update_statistics(wallet):
 
+async def update_statistics(wallet):
     try:
         await random_sleep_before_start(wallet=wallet)
 
         client = Client(private_key=wallet.private_key, network=Networks.Solana, proxy=wallet.proxy)
         controller = Controller(client=client, wallet=wallet)
 
-        stats = await controller.update_db_by_user_info()
+        await controller.update_db_by_user_info()
 
     except Exception as e:
-        logger.error(f'Core | Activity | {wallet} | {e}')
+        logger.error(f"Core | Activity | {wallet} | {e}")
         raise e
 
-async def swaps_activity_task(wallet):
 
+async def swaps_activity_task(wallet):
     try:
         await random_sleep_before_start(wallet=wallet)
 
@@ -79,16 +79,14 @@ async def swaps_activity_task(wallet):
             logger.warning(actions)
 
         else:
-            logger.info(f'{wallet} | Started Activity Tasks | Wallet will do {len(actions)} actions')
+            logger.info(f"{wallet} | Started Activity Tasks | Wallet will do {len(actions)} actions")
 
             for action in actions:
-
-                sleep = random.randint(Settings().random_pause_between_actions_min,
-                                       Settings().random_pause_between_actions_max)
+                sleep = random.randint(Settings().random_pause_between_actions_min, Settings().random_pause_between_actions_max)
                 try:
                     status = await action()
 
-                    if 'Failed' not in status:
+                    if "Failed" not in status:
                         logger.success(status)
                     else:
                         logger.error(status)
@@ -98,7 +96,7 @@ async def swaps_activity_task(wallet):
                     continue
 
                 finally:
-                    logger.info(f'{wallet} | Started sleep {sleep} sec for next action....')
+                    logger.info(f"{wallet} | Started sleep {sleep} sec for next action....")
                     await asyncio.sleep(sleep)
 
         await controller.update_db_by_user_info()
@@ -107,8 +105,9 @@ async def swaps_activity_task(wallet):
         raise
 
     except Exception as e:
-        logger.error(f'Core | Activity | {wallet} | {e}')
+        logger.error(f"Core | Activity | {wallet} | {e}")
         raise e
+
 
 async def execute(wallets: List[Wallet], task_func, random_pause_wallet_after_completion: int = 0):
     while True:
@@ -138,6 +137,7 @@ async def execute(wallets: List[Wallet], task_func, random_pause_wallet_after_co
         next_run = datetime.now() + timedelta(seconds=random_pause_wallet_after_completion)
         logger.info(f"Sleeping {random_pause_wallet_after_completion} seconds. Next run at: {next_run.strftime('%Y-%m-%d %H:%M:%S')}")
         await asyncio.sleep(random_pause_wallet_after_completion)
+
 
 async def activity(action: int):
     if not check_encrypt_param():

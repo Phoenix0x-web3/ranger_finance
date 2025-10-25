@@ -12,21 +12,15 @@ from utils.db_api.models import Wallet
 
 class TokenContracts:
     SOL = RawContract(
-        title='SOL',
-        mint='So11111111111111111111111111111111111111112',
-        program='TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'
+        title="SOL", mint="So11111111111111111111111111111111111111112", program="TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
     )
 
     USDC = RawContract(
-        title='USDC',
-        mint='EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
-        program='TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'
+        title="USDC", mint="EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", program="TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
     )
 
     USDT = RawContract(
-        title='USDT',
-        mint='Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB',
-        program='TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA'
+        title="USDT", mint="Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB", program="TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
     )
 
 
@@ -51,7 +45,6 @@ class Base:
 
         for _ in range(5):
             try:
-
                 r = await self.browser.get(url=f"https://api.binance.com/api/v3/depth?limit=1&symbol={token_symbol}{second_token}")
                 if r.status_code != 200:
                     return None
@@ -65,7 +58,6 @@ class Base:
         raise ValueError(f"Can not get {token_symbol + second_token} price from Binance")
 
     async def balance_map(self, token_map):
-
         tokens = {}
 
         for token in token_map:
@@ -85,7 +77,6 @@ class Base:
         return tokens
 
     async def debug_blockhashes(self, tx_b64: str) -> dict:
-
         tx = VersionedTransaction.from_bytes(base64.b64decode(tx_b64))
 
         api_bh = tx.message.recent_blockhash
@@ -120,14 +111,9 @@ class Base:
         if micro > 0:
             fee_lamports = (limit * micro) // 1_000_000
             fee_sol = fee_lamports / 1e9
-            logger.info(
-                f"[RangerFinance] ComputeBudget → limit={limit:,} CU | "
-                f"price={micro:,} µLamports | max_fee≈{fee_sol:.6f} SOL"
-            )
+            logger.info(f"[RangerFinance] ComputeBudget → limit={limit:,} CU | price={micro:,} µLamports | max_fee≈{fee_sol:.6f} SOL")
         else:
-            logger.info(
-                f"[RangerFinance] ComputeBudget → limit={limit:,} CU | price not set (default fee)"
-            )
+            logger.info(f"[RangerFinance] ComputeBudget → limit={limit:,} CU | price not set (default fee)")
 
         logger.info(
             f"[RangerFinance] Blockhashes → api={api_bh_str} | latest={latest_bh} | "

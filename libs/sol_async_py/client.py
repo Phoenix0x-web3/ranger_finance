@@ -16,19 +16,11 @@ from utils.encryption import get_private_key
 
 
 class Client:
-
-    def __init__(self,
-                 private_key,
-                 network,
-                 proxy = None) -> None:
-
+    def __init__(self, private_key, network, proxy=None) -> None:
         self.private_key = private_key
         self.proxy = proxy
         self.network: Network = network
-        self.rpc = async_api.AsyncClient(
-            endpoint=self.network.endpoint,
-            proxy=self.proxy
-        )
+        self.rpc = async_api.AsyncClient(endpoint=self.network.endpoint, proxy=self.proxy)
 
         self.solders = solders
         self.solana_py = solana
@@ -38,11 +30,11 @@ class Client:
         self.instruct = Instructions(self)
         self.wallet = Wallet(self)
 
-        if isinstance(private_key, str) and re.match('\\[.+]', private_key):
+        if isinstance(private_key, str) and re.match("\\[.+]", private_key):
             self.account = self.parse_private_key_bytes(private_key)
 
         elif isinstance(private_key, str):
-            if 'gAAA' in private_key:
+            if "gAAA" in private_key:
                 private_key = get_private_key(private_key)
             self.account = Keypair.from_base58_string(private_key)
 
@@ -96,10 +88,7 @@ class Client:
 
         # 3) Вычисляем публичный ключ из этой либы
         public_key_obj = private_key_obj.public_key()
-        public_key_bytes = public_key_obj.public_bytes(
-            encoding=Encoding.Raw,
-            format=PublicFormat.Raw
-        )
+        public_key_bytes = public_key_obj.public_bytes(encoding=Encoding.Raw, format=PublicFormat.Raw)
 
         # 4) (Необязательно) Проверяем, совпадает ли вычисленный public_key с зашитым
         #    во второй половине 64-байтового массива:
@@ -109,4 +98,3 @@ class Client:
 
         # 5) Возвращаем Account, где в `private_key` храним все 64 байта (Solana-формат).
         return Keypair.from_bytes(key_64)
-

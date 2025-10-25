@@ -7,6 +7,7 @@ from solders.pubkey import Pubkey
 if TYPE_CHECKING:
     from .client import Client
 
+
 class PDA:
     def __init__(self, client: Client):
         self.client = client
