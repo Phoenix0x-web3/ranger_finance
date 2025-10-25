@@ -22,7 +22,7 @@ class Transactions:
         self.client = client
 
     async def get_ata(self, token: RawContract) -> Pubkey | None:
-        if token.title == 'SOL':
+        if token.title == "SOL":
             ata = get_associated_token_address(self.client.account.pubkey(), token.mint, token.program)
         else:
             ata = get_associated_token_address(self.client.account.pubkey(), token.mint, token.program)
