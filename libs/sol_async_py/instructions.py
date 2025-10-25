@@ -13,6 +13,7 @@ if TYPE_CHECKING:
 
 COMPUTE_BUDGET = Pubkey.from_string("ComputeBudget111111111111111111111111111111")
 
+
 @dataclass
 class ComputeBudgetInfo:
     limit: int = 0
@@ -30,7 +31,7 @@ class Instructions:
         return Instruction(program_id=COMPUTE_BUDGET, accounts=[], data=data)
 
     @staticmethod
-    def set_compute_unit_price( micro_lamports: int) -> Instruction:
+    def set_compute_unit_price(micro_lamports: int) -> Instruction:
         data = bytes([3]) + micro_lamports.to_bytes(8, "little")
         return Instruction(program_id=COMPUTE_BUDGET, accounts=[], data=data)
 
@@ -69,16 +70,13 @@ class Instructions:
 
         return self.calc_max_fee(limit, price)
 
-
     def calc_max_fee(self, limit: int, price: int) -> ComputeBudgetInfo:
-
         max_fee_sol = 0.0
         if price > 0 and limit > 0:
             fee_lamports = limit * price // 1_000_000
             max_fee_sol = fee_lamports / 1e9
 
         return ComputeBudgetInfo(limit=limit, price=price, max_fee_sol=max_fee_sol)
-
 
     def _parse_compute_budget(self, ix: CompiledInstruction, account_keys: list[Pubkey]) -> Optional[dict]:
         program_id = account_keys[ix.program_id_index]
@@ -102,7 +100,6 @@ class Instructions:
         return None
 
     def __parse_compute_budget(self, ix, account_keys):
-
         prog_id = account_keys[ix.program_id_index]
         if str(prog_id) != "ComputeBudget111111111111111111111111111111":
             return None
@@ -121,23 +118,12 @@ class Instructions:
 
     @staticmethod
     async def acount_meta(pubkey, is_signer: bool = False, is_writable: bool = False):
+        return AccountMeta(pubkey=pubkey, is_signer=is_signer, is_writable=is_writable)
 
-        return AccountMeta(
-            pubkey=pubkey, is_signer=is_signer, is_writable=is_writable
-        )
+    async def prepare_instruction(self, program_id: str, accounts: List[Pubkey, bool, bool], data: bytes) -> Instruction:
+        # accounts = [self.acount_meta(account) for account in accounts]
 
-    async def prepare_instruction(self,
-                                  program_id: str ,
-                                  accounts: List[Pubkey, bool, bool],
-                                  data: bytes) -> Instruction:
-
-        #accounts = [self.acount_meta(account) for account in accounts]
-
-        instruction = Instruction(
-            program_id=Pubkey.from_string(program_id),
-            accounts=accounts,
-            data=data
-        )
+        instruction = Instruction(program_id=Pubkey.from_string(program_id), accounts=accounts, data=data)
 
         return instruction
 
@@ -152,5 +138,5 @@ class Instructions:
             # Убедимся, что значение укладывается в байт
             if not (0 <= val < 256):
                 raise ValueError(f"Значение {val} выходит за границы uint8")
-            buf.extend(struct.pack('<B', val))
+            buf.extend(struct.pack("<B", val))
         return bytes(buf)

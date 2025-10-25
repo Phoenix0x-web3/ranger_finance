@@ -22,7 +22,7 @@ class Transactions:
         self.client = client
 
     async def get_ata(self, token: RawContract) -> Pubkey | None:
-        if token.title == 'SOL':
+        if token.title == "SOL":
             ata = get_associated_token_address(self.client.account.pubkey(), token.mint, token.program)
         else:
             ata = get_associated_token_address(self.client.account.pubkey(), token.mint, token.program)
@@ -35,8 +35,7 @@ class Transactions:
             return None
         return ata
 
-
-    async def prepare_tx(self, instructions: list | None, units: int = None, return_ix = False, signers: list = None):
+    async def prepare_tx(self, instructions: list | None, units: int = None, return_ix=False, signers: list = None):
         if instructions is None:
             instructions = []
 
@@ -49,18 +48,12 @@ class Transactions:
 
         if isinstance(instructions, list):
             if units is not None:
-                instructions = [
-                    units,
-                    instructions
-                ]
+                instructions = [units, instructions]
         else:
-            instructions = [
-                units,
-                instructions
-            ]
+            instructions = [units, instructions]
 
         instructions = [i for i in instructions if i is not None]
-        #print(instructions)
+        # print(instructions)
         if return_ix:
             return instructions
 
@@ -68,10 +61,7 @@ class Transactions:
         block = block.value.blockhash
 
         message = MessageV0.try_compile(
-            instructions=instructions,
-            payer=self.client.account.pubkey(),
-            address_lookup_table_accounts=[],
-            recent_blockhash=block
+            instructions=instructions, payer=self.client.account.pubkey(), address_lookup_table_accounts=[], recent_blockhash=block
         )
         # if units is None:
         #     if not signers:
@@ -88,7 +78,6 @@ class Transactions:
         return message
 
     async def wait_tx_confirmation_lite(self, sig: str, timeout: int = 60):
-
         started = time()
 
         while True:
@@ -108,40 +97,27 @@ class Transactions:
 
             await asyncio.sleep(1)
 
-    async def send_tx(self,
-                      message,
-                      signers=None,
-                      skip_simultaion=False):
-
+    async def send_tx(self, message, signers=None, skip_simultaion=False):
         if not signers:
-                signers = [self.client.account]
+            signers = [self.client.account]
 
         tx = VersionedTransaction(message=message, keypairs=signers)
 
         if isinstance(message, MessageV0):
-
             if not skip_simultaion:
                 await self.client.rpc.simulate_transaction(
                     txn=tx,
                     sig_verify=True,
                 )
 
-            sig = await self.client.rpc.send_transaction(
-                txn=tx
-            )
+            sig = await self.client.rpc.send_transaction(txn=tx)
 
         else:
-            sig = await self.client.rpc.send_transaction(
-                txn=tx,
-                opts=TxOpts(skip_preflight=True)
-            )
+            sig = await self.client.rpc.send_transaction(txn=tx, opts=TxOpts(skip_preflight=True))
 
-        wait_for_send = await self.wait_tx_confirmation_lite(
-            sig=sig.value
-        )
+        wait_for_send = await self.wait_tx_confirmation_lite(sig=sig.value)
 
         if wait_for_send == TransactionConfirmationStatus.Confirmed:
-
             return sig.value
 
         raise Exception(f"TX Status: {wait_for_send}")

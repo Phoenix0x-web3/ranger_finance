@@ -154,7 +154,7 @@ class Import:
                 address=str(client.account.pubkey()),
                 proxy=wl.proxy,
                 deposit_address=wl.deposit_address,
-                #discord_token=wl.discord_token,
+                # discord_token=wl.discord_token,
             )
 
             remove_line_from_file(wl.private_key, "private_keys.txt")
@@ -180,7 +180,7 @@ class Sync:
     def parse_tokens_and_proxies_from_txt(wallets: List) -> List[Dict[str, Optional[str]]]:
         proxies = read_lines("proxy.txt")
         deposit_address = read_lines("deposit_address.txt")
-        #discord_tokens = read_lines("discord_tokens.txt")
+        # discord_tokens = read_lines("discord_tokens.txt")
 
         record_count = len(wallets)
 
@@ -190,7 +190,7 @@ class Sync:
                 {
                     "proxy": parse_proxy(pick_proxy(proxies, i)),
                     "deposit_address": deposit_address[i] if i < len(deposit_address) else None,
-                    #"discord_token": discord_tokens[i] if i < len(discord_tokens) else None,
+                    # "discord_token": discord_tokens[i] if i < len(discord_tokens) else None,
                 }
             )
 

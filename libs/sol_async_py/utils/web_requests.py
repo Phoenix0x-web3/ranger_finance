@@ -26,7 +26,7 @@ def request_params(params: dict[str, ...] | None) -> dict[str, str | int | float
             new_params[key] = str(value).lower()
 
         elif isinstance(value, bytes):
-            new_params[key] = value.decode('utf-8')
+            new_params[key] = value.decode("utf-8")
 
     return new_params
 
@@ -54,7 +54,7 @@ def aiohttp_params(params: dict[str, ...] | None) -> dict[str, str | int | float
             new_params[key] = str(value).lower()
 
         elif isinstance(value, bytes):
-            new_params[key] = value.decode('utf-8')
+            new_params[key] = value.decode("utf-8")
 
     return new_params
 
@@ -78,7 +78,7 @@ async def async_get(url: str, headers: dict | None = None, **kwargs) -> dict | N
             headers=headers,
             **kwargs,
             # params=params,
-            #proxy=proxy_url
+            # proxy=proxy_url
         )
         status_code = response.status_code
         response = response.json()
@@ -106,7 +106,7 @@ async def async_put(url: str, headers: dict | None = None, **kwargs) -> dict | N
             headers=headers,
             **kwargs,
             # params=params,
-            #proxy=proxy_url
+            # proxy=proxy_url
         )
         status_code = response.status_code
         response = response.json()
@@ -134,7 +134,7 @@ async def async_post(url: str, headers: dict | None = None, **kwargs) -> dict | 
             headers=headers,
             **kwargs,
             # params=params,
-            #proxy=proxy_url
+            # proxy=proxy_url
         )
 
         status_code = response.status_code

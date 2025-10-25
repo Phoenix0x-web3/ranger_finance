@@ -23,25 +23,24 @@ class Wallet:
         self.client = client
 
     async def get_transactions(self, address: str | Pubkey = None):
-
         if isinstance(address, str):
             address = Pubkey.from_string(address)
 
         if address is None:
             address = self.client.account.pubkey()
 
-        data = await self.client.rpc.get_signatures_for_address(account=address, commitment='finalized')
+        data = await self.client.rpc.get_signatures_for_address(account=address, commitment="finalized")
 
         form = json.loads(data.to_json())
-        data = form.get('result')
+        data = form.get("result")
 
         return data
 
     async def get_token_decimals(self, token):
+        if token == str(self.client.account.pubkey()):
+            return 9
 
-        if token == str(self.client.account.pubkey()): return 9
-
-        token=Pubkey.from_string(token)
+        token = Pubkey.from_string(token)
         info = await self.client.rpc.get_token_supply(token)
 
         if info.value.decimals:
@@ -50,21 +49,17 @@ class Wallet:
 
         return None
 
-    async def balance(self, token = None,):
-
+    async def balance(
+        self,
+        token=None,
+    ):
         if not token:
             balance = await self.client.rpc.get_balance(pubkey=self.client.account.pubkey())
 
-            return TokenAmount(
-            amount = balance.value,
-            decimals = 9,
-            wei = True
-        )
+            return TokenAmount(amount=balance.value, decimals=9, wei=True)
 
         associated_token = get_associated_token_address(
-            wallet_address = self.client.account.pubkey(),
-            token_mint_address = token.mint,
-            token_program_id = token.program
+            wallet_address=self.client.account.pubkey(), token_mint_address=token.mint, token_program_id=token.program
         )
 
         balance = await self.client.rpc.get_token_account_balance(associated_token)
@@ -72,14 +67,9 @@ class Wallet:
         if isinstance(balance, InvalidParamsMessage):
             return TokenAmount(amount=0)
 
-        return TokenAmount(
-            amount=int(balance.value.amount),
-            decimals=balance.value.decimals,
-            wei = True
-        )
+        return TokenAmount(amount=int(balance.value.amount), decimals=balance.value.decimals, wei=True)
 
     async def transfer_native(self, to_address: str | Pubkey, amount: int | TokenAmount, return_ix: bool = False):
-
         if isinstance(to_address, str):
             to_address = Pubkey.from_string(to_address)
 
@@ -87,15 +77,9 @@ class Wallet:
             amount = TokenAmount(amount=amount)
 
         if not amount:
-            return 'No amount provided'
+            return "No amount provided"
 
-        transfer_tx = transfer(
-            TransferParams(
-                from_pubkey=self.client.account.pubkey(),
-                to_pubkey=to_address,
-                lamports=amount.Wei
-            )
-        )
+        transfer_tx = transfer(TransferParams(from_pubkey=self.client.account.pubkey(), to_pubkey=to_address, lamports=amount.Wei))
 
         if return_ix:
             return transfer_tx
@@ -104,8 +88,13 @@ class Wallet:
 
         return await self.send_tx(message=tx)
 
-    async def transfer_token2022(self, to_address: str | Pubkey, amount: int | TokenAmount, token: RawContract, return_ix: bool = False, ):
-
+    async def transfer_token2022(
+        self,
+        to_address: str | Pubkey,
+        amount: int | TokenAmount,
+        token: RawContract,
+        return_ix: bool = False,
+    ):
         if isinstance(to_address, str):
             to_address = Pubkey.from_string(to_address)
 
@@ -113,7 +102,7 @@ class Wallet:
             amount = TokenAmount(amount=amount)
 
         if not amount:
-            return 'No amount provided'
+            return "No amount provided"
 
             # --- деривация ATA ---
 
@@ -128,22 +117,22 @@ class Wallet:
             token_mint_address=token.mint,
             token_program_id=token.program,
         )
-        #print(sender_ata, recipient_ata)
+        # print(sender_ata, recipient_ata)
 
         data = random.randint(190000, 200000)
-        set_compute_unit_limit_instruction = Instruction(
+        Instruction(
             program_id=Pubkey.from_string("ComputeBudget111111111111111111111111111111"),
             accounts=[],
-            data=bytes([2]) + (data).to_bytes(4, "little")
+            data=bytes([2]) + (data).to_bytes(4, "little"),
         )
 
         # 2. Установка цены за вычислительную единицу
-        #data = random.randint(4900, 5100)
+        # data = random.randint(4900, 5100)
         data = random.randint(3700, 10000)
-        set_compute_unit_price_instruction = Instruction(
+        Instruction(
             program_id=Pubkey.from_string("ComputeBudget111111111111111111111111111111"),
             accounts=[],
-            data=bytes([3]) + (data).to_bytes(8, "little")
+            data=bytes([3]) + (data).to_bytes(8, "little"),
         )
 
         ixs = []
@@ -171,13 +160,7 @@ class Wallet:
 
         return await self.send_tx(message=tx)
 
-        transfer_tx = transfer(
-            TransferParams(
-                from_pubkey=self.client.account.pubkey(),
-                to_pubkey=to_address,
-                lamports=amount.Wei
-            )
-        )
+        transfer_tx = transfer(TransferParams(from_pubkey=self.client.account.pubkey(), to_pubkey=to_address, lamports=amount.Wei))
 
         if return_ix:
             return transfer_tx
@@ -191,8 +174,6 @@ class Wallet:
             signers = self.client.account
 
         tx = VersionedTransaction(message=message, keypairs=[signers])
-        tx_sig = await self.client.rpc.send_transaction(
-            txn=tx
-        )
+        tx_sig = await self.client.rpc.send_transaction(txn=tx)
         if tx_sig:
             return tx_sig.value

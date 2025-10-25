@@ -71,7 +71,7 @@ class Controller:
 
             while float(balance.Ether) < (amount - 0.003):
 
-                sleep = random.randint(20,30)
+                sleep = random.randint(35, 60)
                 logger.warning(f"{self.wallet} | OKX | awaiting balance, retry in {sleep} sec..")
                 await asyncio.sleep(sleep)
                 balance = await self.client.wallet.balance()
