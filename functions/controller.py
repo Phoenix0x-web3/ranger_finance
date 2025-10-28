@@ -185,11 +185,10 @@ class Controller:
             initial_swap = await self.make_first_swap(for_comissions=min_sol_for_comission)
             logger.success(initial_swap)
 
-        #ref_status = await self.ranger.get_refferal_status()
+        ref_status = await self.ranger.get_refferal_status()
 
-        # if not ref_status:
-        #     final_actions.append(lambda: self.ranger.apply_referral())
-
+        if not ref_status:
+            final_actions.append(lambda: self.ranger.apply_referral())
 
         if float(balance.Ether) <= settings.minimal_sol_balance and not initial:
 
