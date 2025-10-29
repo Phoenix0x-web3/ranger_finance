@@ -134,7 +134,7 @@ withdrawal_amount:
   min: 0.8
   max: 1
 
-# Keeping SOL amount in the wallet for transaction fees after withdrawal from okx
+# Keeping SOL amount in the wallet for transaction fees after withdrawal from okx 
 sol_balance_for_commissions:
   min: 0.05
   max: 0.08
