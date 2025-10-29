@@ -63,14 +63,14 @@ class RangerFinance(Base):
             f"&input_amount={input_amount}"
         )
 
-        url = (
-            f"{self.RANGER_API2}/quote?"
-            f"user_wallet_address={user_wallet_address}"
-            f"&slippage_bps={slippage_bps}"
-            f"&input_mint={input_mint}"
-            f"&output_mint={output_mint}"
-            f"&input_amount={input_amount}"
-        )
+        # url = (
+        #     f"{self.RANGER_API2}/quote?"
+        #     f"user_wallet_address={user_wallet_address}"
+        #     f"&slippage_bps={slippage_bps}"
+        #     f"&input_mint={input_mint}"
+        #     f"&output_mint={output_mint}"
+        #     f"&input_amount={input_amount}"
+        # )
 
         r = await self.session.get(url=url, headers=self.base_headers, timeout=300)
         # print(input_mint, output_mint, r.text)
