@@ -145,7 +145,12 @@ minimal_sol_balance: 0.005
 # Refill SOL for transaction fees in usd
 refill_usd_amount:
   min: 8
-  max: 10
+  max: 10 
+
+# Percentage of stablecoins to swap between each swap on SPOT
+stablecoin_swap_percentage:
+  min: 80
+  max: 100
 
 # Swaps count per cycle on SPOT
 swaps_count:
