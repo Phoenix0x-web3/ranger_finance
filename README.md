@@ -129,7 +129,7 @@ okx_api_key: ''
 okx_api_secret: ''
 okx_passphrase: ''
 
-# Withdrawal amount in SOL from okx
+# Withdrawal amount in SOL from okx exchanger
 withdrawal_amount:
   min: 0.8
   max: 1
