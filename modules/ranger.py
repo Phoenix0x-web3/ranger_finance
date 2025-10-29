@@ -3,6 +3,7 @@ import base64
 import hashlib
 import random
 import uuid
+from decimal import Decimal
 from time import time
 from typing import Any, Dict, Optional, Tuple
 
@@ -601,21 +602,25 @@ class RangerFinance(Base):
 
     @controller_log("Swap Controller")
     async def swap_controller(self):
-        tok = [
-            TokenContracts.USDC,
-            TokenContracts.USDT,
-        ]
+        stablecoins = [TokenContracts.USDC, TokenContracts.USDT]
 
-        balances = await self.balance_map(token_map=tok)
+        balances = await self.balance_map(token_map=stablecoins)
+        if not balances:
+            logger.warning("No stablecoin balances found — skipping swap.")
+            return None
 
-        from_token = random.choice(list(balances.keys()))
+        # get the from_token with the highest balance
+        from_token = max(balances, key=lambda t: balances[t].Ether)
+        to_token = next(t for t in stablecoins if t != from_token)
 
-        tok.remove(from_token)
+        percent = Decimal(
+            str(random.uniform(Settings().stablecoin_swap_percentage_min, Settings().stablecoin_swap_percentage_max))
+        ) / Decimal("100")
 
-        to_token = random.choice(tok)
+        full_amount = balances[from_token].Ether
+        swap_amount = full_amount * percent
+        amount_to_swap = TokenAmount(swap_amount, decimals=balances[from_token].decimals)
 
-        swap = await self.swap_from_quote(from_token=from_token, to_token=to_token, amount=balances[from_token])
+        logger.debug(f"Swapping {amount_to_swap.Ether:.4f} {from_token} → {to_token} ({percent * 100:.2f}% of balance)")
 
-        if swap:
-            return swap
-            logger.success(swap)
+        return await self.swap_from_quote(from_token=from_token, to_token=to_token, amount=amount_to_swap)

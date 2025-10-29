@@ -35,6 +35,9 @@ class Settings(Singleton):
         self.refill_usd_amount_min = json_data.get("refill_usd_amount", {}).get("min")
         self.refill_usd_amount_max = json_data.get("refill_usd_amount", {}).get("max")
 
+        self.stablecoin_swap_percentage_min = json_data.get("stablecoin_swap_percentage", {}).get("min", 80)
+        self.stablecoin_swap_percentage_max = json_data.get("stablecoin_swap_percentage", {}).get("max", 100)
+
         self.swaps_count_min = json_data.get("swaps_count", {}).get("min")
         self.swaps_count_max = json_data.get("swaps_count", {}).get("max")
 
