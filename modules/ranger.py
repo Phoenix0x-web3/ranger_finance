@@ -28,7 +28,8 @@ class RangerFinance(Base):
     __module_name__ = "Ranger Finance"
 
     RANGER_API = "https://prod-spot-api-437363704888.asia-northeast1.run.app/api/v1"
-    RANGER_API2 = "https://staging-spot-api-437363704888.asia-northeast1.run.app/api/v2/market"
+    #RANGER_API2 = "https://staging-spot-api-437363704888.asia-northeast1.run.app/api/v2/market"
+    RANGER_API2 = "https://prod-spot-api-437363704888.asia-northeast1.run.app/api/v2/market"
 
     def __init__(self, client: Client, wallet: Wallet):
         super().__init__(client=client, wallet=wallet)
