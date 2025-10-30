@@ -63,14 +63,14 @@ class RangerFinance(Base):
             f"&input_amount={input_amount}"
         )
 
-        # url = (
-        #     f"{self.RANGER_API2}/quote?"
-        #     f"user_wallet_address={user_wallet_address}"
-        #     f"&slippage_bps={slippage_bps}"
-        #     f"&input_mint={input_mint}"
-        #     f"&output_mint={output_mint}"
-        #     f"&input_amount={input_amount}"
-        # )
+        url = (
+            f"{self.RANGER_API2}/quote?"
+            f"user_wallet_address={user_wallet_address}"
+            f"&slippage_bps={slippage_bps}"
+            f"&input_mint={input_mint}"
+            f"&output_mint={output_mint}"
+            f"&input_amount={input_amount}"
+        )
 
         r = await self.session.get(url=url, headers=self.base_headers, timeout=300)
         # print(input_mint, output_mint, r.text)
@@ -120,6 +120,30 @@ class RangerFinance(Base):
         #     f"amount={best['output_token_info']['amount']}"
         # )
         return best
+
+    async def post_titan_tx(self, quote_id, sig):
+        headers = {
+            **self.base_headers,
+            "accept": "*/*",
+            "accept-language": "ru-RU,ru;q=0.9,en-US;q=0.8,en;q=0.7",
+            "content-type": "application/json",
+            "origin": "https://www.app.ranger.finance",
+        }
+
+        payload = {
+            'provider': 'titan',
+            'quote_id': quote_id,
+            'transaction_signature': str(sig),
+        }
+
+        r = await self.browser.post(
+            url=self.RANGER_API2,
+            headers=headers,
+            cookies=self.cookies,
+            json=payload,
+        )
+
+        return r.json()
 
     @async_retry(retries=3, delay=3)
     async def swap_from_quote(self, from_token, to_token, amount, retries=0) -> str:
@@ -232,6 +256,15 @@ class RangerFinance(Base):
         resp = await self.client.tx.send_tx(message=new_tx.message, skip_simultaion=True)
 
         if resp:
+
+            if quote['provider'] == 'titan':
+                quote_id = quote['quote_id']
+                try:
+                    titan_post_tx = await self.post_titan_tx(quote_id=quote_id, sig=resp)
+                    logger.debug(f"{self.wallet} | {titan_post_tx}")
+                except Exception as e:
+                    logger.warning(f"{self.wallet} | Post Titan Tx Failed |{e}")
+                    pass
             try:
                 sol_price = await self.get_token_price(token_symbol="SOL")
 
@@ -259,7 +292,7 @@ class RangerFinance(Base):
                 pass
 
             finally:
-                return f"Success | Swapped {amount} {from_token} to {output} {to_token} | Ranger fee {ranger_fee} USD | Onchain fee {max_fee_sol:.7f} sol | via {quote['provider']} |sent tx {resp}"
+                return f"Success | Swapped {amount} {from_token} to {output} {to_token} | Ranger fee {ranger_fee} USD | Onchain fee {max_fee_sol:.7f} sol | via {quote['provider']} | sent tx {resp}"
 
         raise Exception(f"Something Wrong in {resp}")
 
