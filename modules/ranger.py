@@ -131,9 +131,9 @@ class RangerFinance(Base):
         }
 
         payload = {
-            'provider': 'titan',
-            'quote_id': quote_id,
-            'transaction_signature': str(sig),
+            "provider": "titan",
+            "quote_id": quote_id,
+            "transaction_signature": str(sig),
         }
 
         r = await self.browser.post(
@@ -256,9 +256,8 @@ class RangerFinance(Base):
         resp = await self.client.tx.send_tx(message=new_tx.message, skip_simultaion=True)
 
         if resp:
-
-            if quote['provider'] == 'titan':
-                quote_id = quote['quote_id']
+            if quote["provider"] == "titan":
+                quote_id = quote["quote_id"]
                 try:
                     titan_post_tx = await self.post_titan_tx(quote_id=quote_id, sig=resp)
                     logger.debug(f"{self.wallet} | {titan_post_tx}")
