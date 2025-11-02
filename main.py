@@ -7,7 +7,7 @@ from inquirer import themes
 from rich.console import Console
 
 from data.constants import PROJECT_NAME
-from functions.activity import activity
+from functions.activity import activity, parse_stats
 from utils.create_files import create_files, reset_folder
 from utils.db_api.models import Wallet
 from utils.db_api.wallet_api import db
@@ -23,6 +23,7 @@ PROJECT_ACTIONS = [
     "2. Withdraw additional SOL to wallets",
     "3. Swap all SOL to UDST/USDC",
     "4. Update wallet statistics from app.ranger.finance",
+    "5. Count point cost and parse statistics",
     "Back",
 ]
 
@@ -88,6 +89,8 @@ async def choose_action():
         await activity(action=3)
     elif "4." in action:
         await activity(action=4)
+    elif "5." in action:
+        await parse_stats()
 
     elif action == "1. Reset files Folder":
         console.print("This action will delete the files folder and reset it.")

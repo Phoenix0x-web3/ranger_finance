@@ -26,6 +26,7 @@ class Wallet(Base):
     volume_portal: Mapped[int] = mapped_column(default=0)
     invite_code: Mapped[str] = mapped_column(default="")
     completed: Mapped[bool] = mapped_column(default=False)
+    point_cost: Mapped[float] = mapped_column(default=0.0)
 
     def __repr__(self):
         if Settings().show_wallet_address_logs:

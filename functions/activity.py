@@ -176,3 +176,23 @@ async def activity(action: int):
             wallets,
             update_statistics,
         )
+
+
+async def parse_stats():
+    sum_volume = 0
+    sum_points = 0
+    sum_fee = 0
+
+    wallets: List[Wallet] = db.all(Wallet)
+    for w in wallets:
+        sum_volume += w.volume_portal
+        sum_points += w.points
+        sum_fee += w.summary_fees
+
+        point_cost = w.summary_fees / w.points if w.points else 0
+        logger.info(f"{w} | [Point Cost: {point_cost:.4f} $] | [Burned: {w.summary_fees:.2f} $, Points: {w.points:.2f}]")
+
+    point_cost = sum_fee / sum_points
+    logger.success(
+        f"Summary on Farm | [Point Cost: {point_cost:.4f} $  | [Burned: {sum_fee:.2f} $, Points: {sum_points:.2f}] | Total Volume {sum_volume:.2f}"
+    )

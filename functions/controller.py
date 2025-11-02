@@ -30,6 +30,8 @@ class Controller:
             self.wallet.rank = rank.get('position')
             self.wallet.volume_portal = rank.get('total_volume')
             self.wallet.points = rank.get('total_points')
+
+            self.wallet.point_cost = round(self.wallet.summary_fees / self.wallet.points, 3)
             db.commit()
 
         logger.info(f"{self.wallet} -> "
