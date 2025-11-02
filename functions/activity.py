@@ -185,9 +185,9 @@ async def parse_stats():
 
     wallets: List[Wallet] = db.all(Wallet)
     for w in wallets:
-        sum_volume = +w.volume_portal
-        sum_points = +w.points
-        sum_fee = +w.summary_fees
+        sum_volume += w.volume_portal
+        sum_points += w.points
+        sum_fee += w.summary_fees
 
         point_cost = w.summary_fees / w.points if w.points else 0
         logger.info(f"{w} | [Point Cost: {point_cost:.4f} $] | [Burned: {w.summary_fees:.2f} $, Points: {w.points:.2f}]")
