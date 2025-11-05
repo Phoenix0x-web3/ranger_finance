@@ -28,6 +28,10 @@ check_git_updates: true
 # The log level for the application. Options: DEBUG, INFO, WARNING, ERROR
 log_level : INFO
 
+
+# Tokens to swap, supports only [SOL, USDT, USDC]
+swap_tokens : [SOL, USDT, USDC]
+
 # Delay before running the new cicle of wallets after it has completed all actions (12 - 24 hrs default)
 random_pause_wallet_after_completion:
   min: 43200

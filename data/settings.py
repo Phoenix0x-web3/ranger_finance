@@ -39,6 +39,8 @@ class Settings(Singleton):
         self.swaps_count_min = json_data.get("swaps_count", {}).get("min")
         self.swaps_count_max = json_data.get("swaps_count", {}).get("max")
 
+        self.swap_tokens = json_data.get("swap_tokens", ["USDT", "USDC"])
+
         self.okx_api_key = json_data.get("okx_api_key", "")
         self.okx_api_secret = json_data.get("okx_api_secret", "")
         self.okx_passphrase = json_data.get("okx_passphrase", "")

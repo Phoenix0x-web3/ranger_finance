@@ -11,10 +11,11 @@ class Programs:
 
 
 class RawContract:
-    def __init__(self, title, mint, program):
+    def __init__(self, title, mint, program, decimals):
         self.title = title
         self.mint = Pubkey.from_string(mint)
         self.program = Pubkey.from_string(program)
+        self.decimals = decimals
 
     def __repr__(self):
         return f"{self.title}"
