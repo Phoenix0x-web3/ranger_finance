@@ -667,7 +667,6 @@ class RangerFinance(Base):
                 usd_balanced[token] = float(balance.Ether)
 
         # get the from_token with the highest balance in usd
-        print(usd_balanced)
         from_token = max(usd_balanced, key=lambda t: usd_balanced[t])
         swap_tokens.remove(from_token)
         to_token = random.choice(swap_tokens)
