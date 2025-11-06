@@ -660,15 +660,15 @@ class RangerFinance(Base):
             return None
 
         sol_balance = balances.get(TokenContracts.SOL)
-    
+
         if TokenContracts.SOL not in swap_tokens and sol_balance.Ether > Decimal(settings.sol_balance_for_commissions_max):
             from_token = TokenContracts.SOL
             to_token = random.choice([t for t in swap_tokens if t != TokenContracts.SOL])
             swap_amount = Decimal(sol_balance.Ether) - Decimal(settings.sol_balance_for_commissions_max)
         else:
-            percent = Decimal(
-                str(random.uniform(settings.swap_amount_percentage_min, settings.swap_amount_percentage_max))
-            ) / Decimal("100")
+            percent = Decimal(str(random.uniform(settings.swap_amount_percentage_min, settings.swap_amount_percentage_max))) / Decimal(
+                "100"
+            )
 
             from_token = max(usd_balances, key=lambda t: usd_balances[t])
             swap_tokens.remove(from_token)
