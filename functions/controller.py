@@ -233,7 +233,7 @@ class Controller:
         if not ref_status:
             final_actions.append(lambda: self.ranger.apply_referral())
 
-        if float(balance.Ether) <= settings.minimal_sol_balance and not initial:
+        if float(balance.Ether) <= settings.sol_balance_for_commissions_min and not initial:
 
             refill_sol_balance = await self.refill_sol_balance()
             logger.success(refill_sol_balance)

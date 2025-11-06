@@ -45,7 +45,6 @@ class Settings(Singleton):
         self.okx_api_secret = json_data.get("okx_api_secret", "")
         self.okx_passphrase = json_data.get("okx_passphrase", "")
 
-        self.minimal_sol_balance = json_data.get("minimal_sol_balance", "")
         self.sol_balance_for_commissions_min = json_data.get("sol_balance_for_commissions", {}).get("min")
         self.sol_balance_for_commissions_max = json_data.get("sol_balance_for_commissions", {}).get("max")
         self.invite_codes = json_data.get("invite_codes", "")

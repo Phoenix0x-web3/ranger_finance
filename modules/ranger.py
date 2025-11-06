@@ -17,7 +17,6 @@ from libs.base_sol import Base, TokenContracts
 from libs.sol_async_py.client import Client
 from libs.sol_async_py.data.models import TokenAmount
 from libs.sol_async_py.instructions import COMPUTE_BUDGET
-from libs.sol_async_py.utils.utils import randfloat
 from utils.browser import Browser
 from utils.db_api.models import Wallet
 from utils.db_api.wallet_api import db
@@ -642,12 +641,6 @@ class RangerFinance(Base):
 
         return r.json()
 
-    async def is_sol_max_balance(self, settings: Settings):
-        sol_balance = await self.client.wallet.balance()
-        if float(sol_balance.Ether) > settings.sol_balance_for_commissions_max:
-            return True
-        return False
-
     @controller_log("Swap Controller")
     async def swap_controller(self):
         settings = Settings()
@@ -655,46 +648,49 @@ class RangerFinance(Base):
         balances = await self.balance_map(token_map=TOKENS_MAP)
 
         if not balances:
-            logger.warning("No stablecoin balances found — skipping swap.")
+            logger.error("No balances found — skipping swap.")
             return None
 
         usd_balances = await self.usd_balance_map(balances=balances)
 
-        is_sol_max_balance = await self.is_sol_max_balance(settings=settings)
-
         swap_tokens = [tok for tok in TOKENS_MAP if tok.title in settings.swap_tokens]
 
-        if TokenContracts.SOL not in swap_tokens and is_sol_max_balance:
-            from_token = max(usd_balances, key=lambda t: usd_balances[t])
-            to_token = random.choice(swap_tokens)
+        if len(swap_tokens) < 2:
+            logger.error(f"Not enough tokens in swap_tokens ({[t.title for t in swap_tokens]}) — skipping.")
+            return None
 
+        sol_balance = balances.get(TokenContracts.SOL)
+
+        if TokenContracts.SOL not in swap_tokens and sol_balance.Ether > settings.sol_balance_for_commissions_max:
+            from_token = TokenContracts.SOL
+            to_token = random.choice([t for t in swap_tokens if t != TokenContracts.SOL])
+            swap_amount = Decimal(sol_balance.Ether) - Decimal(settings.sol_balance_for_commissions_max)
         else:
+            percent = Decimal(
+                str(random.uniform(settings.stablecoin_swap_percentage_min, settings.stablecoin_swap_percentage_max))
+            ) / Decimal("100")
+
             from_token = max(usd_balances, key=lambda t: usd_balances[t])
             swap_tokens.remove(from_token)
             to_token = random.choice(swap_tokens)
 
-        percent = Decimal(
-            str(random.uniform(Settings().stablecoin_swap_percentage_min, Settings().stablecoin_swap_percentage_max))
-        ) / Decimal("100")
+            if from_token == TokenContracts.SOL:
+                min_sol_balance = Decimal(settings.sol_balance_for_commissions_min)
+                full_balance = Decimal(balances[from_token].Ether)
 
-        full_amount = balances[from_token].Ether
+                swap_amount = full_balance * percent
 
-        min_sol_for_comission = Decimal(
-            randfloat(from_=settings.sol_balance_for_commissions_min, to_=settings.sol_balance_for_commissions_max, step=0.001)
-        )
-
-        swap_amount = (
-            full_amount * percent
-            if from_token != TokenContracts.SOL
-            else (full_amount - min_sol_for_comission)
-            if is_sol_max_balance
-            else (full_amount - min_sol_for_comission) * percent
-        )
+                # ensure we never go below the minimum SOL buffer
+                if (full_balance - swap_amount) < min_sol_balance:
+                    swap_amount = full_balance - (min_sol_balance * 1.05)  # add a small buffer
+                    if swap_amount <= 0:
+                        logger.error(f"Skipping swap: SOL balance already below min commission buffer. amount : {swap_amount}")
+                        return None
+            else:
+                swap_amount = Decimal(balances[from_token].Ether) * percent
 
         amount_to_swap = TokenAmount(swap_amount, decimals=balances[from_token].decimals)
 
-        logger.debug(
-            f"Swapping {amount_to_swap.Ether:.4f} {from_token} → {to_token} ({100 if is_sol_max_balance else percent * 100:.2f}% of balance)"
-        )
+        logger.debug(f"Swapping {amount_to_swap.Ether:.4f} {from_token} → {to_token}")
 
         return await self.swap_from_quote(from_token=from_token, to_token=to_token, amount=amount_to_swap)

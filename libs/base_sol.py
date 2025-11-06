@@ -82,11 +82,10 @@ class Base:
         return tokens
 
     async def usd_balance_map(self, balances):
-        sol_price = await self.get_token_price(token_symbol="SOL")
-
         usd_balanced = {}
         for token, balance in balances.items():
             if token == TokenContracts.SOL:
+                sol_price = await self.get_token_price(token_symbol="SOL")
                 usd_balanced[token] = float(balance.Ether) * sol_price
             else:
                 usd_balanced[token] = float(balance.Ether)
