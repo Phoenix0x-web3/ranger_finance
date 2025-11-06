@@ -24,6 +24,8 @@ from utils.db_api.wallet_api import db
 from utils.logs_decorator import controller_log
 from utils.retry import async_retry
 
+TOKENS_MAP = [TokenContracts.USDC, TokenContracts.USDT, TokenContracts.SOL]
+
 
 class RangerFinance(Base):
     __module_name__ = "Ranger Finance"
@@ -299,7 +301,7 @@ class RangerFinance(Base):
                 pass
 
             finally:
-                return f"Success | Swapped {amount} {from_token} to {output} {to_token} | Ranger fee {ranger_fee} USD | Onchain fee {max_fee_sol:.7f} sol | via {quote['provider']} | sent tx {resp}"
+                return f"Success | Swapped {amount} {from_token} to {output} {to_token} | Ranger fee {ranger_fee} USD | Onchain fee {max_fee_sol:.7f} sol | via {quote['provider']} | https://solscan.io/tx/{resp}"
 
         raise Exception(f"Something Wrong in {resp}")
 
@@ -640,37 +642,37 @@ class RangerFinance(Base):
 
         return r.json()
 
+    async def is_sol_max_balance(self, usd_balances):
+        from_token = max(usd_balances, key=lambda t: usd_balances[t])
+        if from_token == TokenContracts.SOL:
+            return True
+
+        return False
+
     @controller_log("Swap Controller")
     async def swap_controller(self):
         settings = Settings()
 
-        solana_tokens = [TokenContracts.USDC, TokenContracts.USDT, TokenContracts.SOL]
-
-        tokens = settings.swap_tokens
-
-        swap_tokens = [tok for tok in solana_tokens if tok.title in tokens]
-
-        balances = await self.balance_map(token_map=swap_tokens)
+        balances = await self.balance_map(token_map=TOKENS_MAP)
 
         if not balances:
             logger.warning("No stablecoin balances found — skipping swap.")
             return None
 
-        sol_price = await self.get_token_price(token_symbol="SOL")
+        usd_balances = await self.usd_balance_map(balances=balances)
 
-        usd_balanced = {}
+        is_sol_max_balance = await self.is_sol_max_balance(usd_balances=usd_balances)
 
-        for token, balance in balances.items():
-            if token == TokenContracts.SOL:
-                usd_balanced[token] = float(balance.Ether) * sol_price
-            else:
-                usd_balanced[token] = float(balance.Ether)
+        swap_tokens = [tok for tok in TOKENS_MAP if tok.title in settings.swap_tokens]
 
-        # get the from_token with the highest balance in usd
-        from_token = max(usd_balanced, key=lambda t: usd_balanced[t])
-        swap_tokens.remove(from_token)
-        to_token = random.choice(swap_tokens)
-        # to_token = next(t for t in balances if t != from_token)
+        if TokenContracts.SOL not in swap_tokens and is_sol_max_balance:
+            from_token = max(usd_balances, key=lambda t: usd_balances[t])
+            to_token = random.choice(swap_tokens)
+
+        else:
+            from_token = max(usd_balances, key=lambda t: usd_balances[t])
+            swap_tokens.remove(from_token)
+            to_token = random.choice(swap_tokens)
 
         percent = Decimal(
             str(random.uniform(Settings().stablecoin_swap_percentage_min, Settings().stablecoin_swap_percentage_max))
@@ -682,10 +684,18 @@ class RangerFinance(Base):
             randfloat(from_=settings.sol_balance_for_commissions_min, to_=settings.sol_balance_for_commissions_max, step=0.001)
         )
 
-        swap_amount = full_amount * percent if from_token != TokenContracts.SOL else (full_amount - min_sol_for_comission) * percent
+        swap_amount = (
+            full_amount * percent
+            if from_token != TokenContracts.SOL
+            else (full_amount - min_sol_for_comission)
+            if is_sol_max_balance
+            else (full_amount - min_sol_for_comission) * percent
+        )
 
         amount_to_swap = TokenAmount(swap_amount, decimals=balances[from_token].decimals)
 
-        logger.debug(f"Swapping {amount_to_swap.Ether:.4f} {from_token} → {to_token} ({percent * 100:.2f}% of balance)")
+        logger.debug(
+            f"Swapping {amount_to_swap.Ether:.4f} {from_token} → {to_token} ({100 if is_sol_max_balance else percent * 100:.2f}% of balance)"
+        )
 
         return await self.swap_from_quote(from_token=from_token, to_token=to_token, amount=amount_to_swap)

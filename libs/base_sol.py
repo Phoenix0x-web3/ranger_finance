@@ -57,7 +57,7 @@ class Base:
                 await asyncio.sleep(5)
         raise ValueError(f"Can not get {token_symbol + second_token} price from Binance")
 
-    async def balance_map(self, token_map):
+    async def balance_map(self, token_map: list):
         tokens = {}
 
         for token in token_map:
@@ -80,6 +80,18 @@ class Base:
                 continue
 
         return tokens
+
+    async def usd_balance_map(self, balances):
+        sol_price = await self.get_token_price(token_symbol="SOL")
+
+        usd_balanced = {}
+        for token, balance in balances.items():
+            if token == TokenContracts.SOL:
+                usd_balanced[token] = float(balance.Ether) * sol_price
+            else:
+                usd_balanced[token] = float(balance.Ether)
+
+        return usd_balanced
 
     async def debug_blockhashes(self, tx_b64: str) -> dict:
         tx = VersionedTransaction.from_bytes(base64.b64decode(tx_b64))

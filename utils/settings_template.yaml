@@ -28,7 +28,6 @@ check_git_updates: true
 # The log level for the application. Options: DEBUG, INFO, WARNING, ERROR
 log_level : INFO
 
-
 # Tokens to swap, supports only [SOL, USDT, USDC]
 swap_tokens : [SOL, USDT, USDC]
 
