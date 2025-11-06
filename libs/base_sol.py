@@ -86,7 +86,7 @@ class Base:
         for token, balance in balances.items():
             if token == TokenContracts.SOL:
                 sol_price = await self.get_token_price(token_symbol="SOL")
-                if sol_price:
+                if sol_price is None:
                     raise ValueError("Could not fetch SOL price for USD balance calculation")
                 
                 usd_balanced[token] = float(balance.Ether) * sol_price
