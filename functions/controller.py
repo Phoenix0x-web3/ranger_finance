@@ -177,19 +177,22 @@ class Controller:
 
         amount = TokenAmount(
             amount=sol_balance.Ether - Decimal(randfloat(from_=0.001, to_=0.002, step=0.0001)), decimals=sol_balance.decimals)
+        try:
+            deposit = await self.client.wallet.transfer_native(
+                to_address=self.wallet.deposit_address,
+                amount=amount
+            )
 
-        deposit = await self.client.wallet.transfer_native(
-            to_address=self.wallet.deposit_address,
-            amount=amount
-        )
+            logger.success(f"{self.wallet} | Deposit Controller | Sol Transfered | https://solscan.io/tx/{deposit}")
+            await asyncio.sleep(random.randint(10, 15))
 
-        logger.success(f"{self.wallet} | Deposit Controller | Sol Transfered | https://solscan.io/tx/{deposit}")
-        await asyncio.sleep(random.randint(10, 15))
+            balances = await self.ranger.balance_map(token_map=TOKENS_MAP)
+            usd_balances = await self.ranger.usd_balance_map(balances=balances)
 
-        balances = await self.ranger.balance_map(token_map=TOKENS_MAP)
-        usd_balances = await self.ranger.usd_balance_map(balances=balances)
+            return f"Deposit to {self.wallet.deposit_address} finished | Current USD Balances: {usd_balances}"
 
-        return f"Deposit to {self.wallet.deposit_address} finished | Current USD Balances: {usd_balances}"
+        except Exception as e:
+            raise f"Deposit Controller | Error: {e}"
 
 
         #todo transfer to deposit address
