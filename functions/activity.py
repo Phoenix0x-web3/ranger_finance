@@ -120,7 +120,7 @@ async def swaps_activity_task(wallet):
         raise
 
     except Exception as e:
-        logger.exception(f"Core | Activity | {wallet} | {e}")
+        logger.error(f"Core | Activity | {wallet} | {e}")
         raise e
 
 
