@@ -666,9 +666,9 @@ class RangerFinance(Base):
             to_token = random.choice([t for t in swap_tokens if t != TokenContracts.SOL])
             swap_amount = Decimal(sol_balance.Ether) - Decimal(settings.sol_balance_for_commissions_max)
         else:
-            percent = Decimal(str(random.uniform(settings.swap_amount_percentage_min, settings.swap_amount_percentage_max))) / Decimal(
-                "100"
-            )
+            percent = Decimal(
+                str(random.uniform(float(settings.swap_amount_percentage_min), float(settings.swap_amount_percentage_max)))
+            ) / Decimal("100")
 
             from_token = max(usd_balances, key=lambda t: usd_balances[t])
             swap_tokens.remove(from_token)
@@ -682,7 +682,7 @@ class RangerFinance(Base):
 
                 # ensure we never go below the minimum SOL buffer
                 if (full_balance - swap_amount) < min_sol_balance:
-                    swap_amount = full_balance - (min_sol_balance * 1.05)  # add a small buffer
+                    swap_amount = full_balance - (min_sol_balance * Decimal("1.05"))  # add a small buffer
                     if swap_amount <= 0:
                         logger.error(f"Skipping swap: SOL balance already below min commission buffer. amount : {swap_amount}")
                         return None
