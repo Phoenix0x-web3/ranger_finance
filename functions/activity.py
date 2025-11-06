@@ -52,6 +52,21 @@ async def withdraw_and_swap(wallet):
         raise e
 
 
+async def deposit(wallet):
+    try:
+        await random_sleep_before_start(wallet=wallet)
+
+        client = Client(private_key=wallet.private_key, network=Networks.Solana, proxy=wallet.proxy)
+        controller = Controller(client=client, wallet=wallet)
+
+        stats = await controller.deposit_controller()
+        logger.success(stats)
+
+    except Exception as e:
+        logger.error(f"Core | Deposit | {wallet} | {e}")
+        raise e
+
+
 async def update_statistics(wallet):
     try:
         await random_sleep_before_start(wallet=wallet)
@@ -175,6 +190,12 @@ async def activity(action: int):
         await execute(
             wallets,
             update_statistics,
+        )
+
+    if action == 6:
+        await execute(
+            wallets,
+            deposit,
         )
 
 

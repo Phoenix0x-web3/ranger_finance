@@ -642,11 +642,10 @@ class RangerFinance(Base):
 
         return r.json()
 
-    async def is_sol_max_balance(self, usd_balances):
-        from_token = max(usd_balances, key=lambda t: usd_balances[t])
-        if from_token == TokenContracts.SOL:
+    async def is_sol_max_balance(self, settings: Settings):
+        sol_balance = await self.client.wallet.balance()
+        if float(sol_balance.Ether) > settings.sol_balance_for_commissions_max:
             return True
-
         return False
 
     @controller_log("Swap Controller")
@@ -661,7 +660,7 @@ class RangerFinance(Base):
 
         usd_balances = await self.usd_balance_map(balances=balances)
 
-        is_sol_max_balance = await self.is_sol_max_balance(usd_balances=usd_balances)
+        is_sol_max_balance = await self.is_sol_max_balance(settings=settings)
 
         swap_tokens = [tok for tok in TOKENS_MAP if tok.title in settings.swap_tokens]
 

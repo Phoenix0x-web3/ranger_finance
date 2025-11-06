@@ -25,6 +25,7 @@ PROJECT_ACTIONS = [
     "3. Swap all SOL to UDST/USDC",
     "4. Update wallet statistics from app.ranger.finance",
     "5. Count point cost and parse statistics",
+    "6. Transfer SOL to deposit address",
     "Back",
 ]
 
@@ -92,6 +93,9 @@ async def choose_action():
         await activity(action=4)
     elif "5." in action:
         await parse_stats()
+
+    elif "6." in action:
+        await activity(action=6)
 
     elif action == "1. Reset files Folder":
         console.print("This action will delete the files folder and reset it.")
