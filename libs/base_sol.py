@@ -88,7 +88,7 @@ class Base:
                 sol_price = await self.get_token_price(token_symbol="SOL")
                 if sol_price is None:
                     raise ValueError("Could not fetch SOL price for USD balance calculation from Binance. Proxy issue")
-                
+
                 usd_balanced[token] = float(balance.Ether) * sol_price
             else:
                 usd_balanced[token] = float(balance.Ether)
