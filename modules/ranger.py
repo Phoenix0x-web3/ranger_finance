@@ -176,7 +176,7 @@ class RangerFinance(Base):
 
         output, ranger_fee = self.parse_quote_amounts(quote, sol_price)
 
-        logger.debug(
+        logger.info(
             f"{self.wallet} | {self.__module_name__} | Trying to swap {amount} {from_token} to {output} {to_token} with {ranger_fee} usd ranger fee | onchain fee {max_fee_sol:.5f} sol | via {quote['provider']}"
         )
         from_token_ata = True
@@ -189,7 +189,7 @@ class RangerFinance(Base):
             to_token_ata = await self.client.tx.get_ata(to_token)
 
         if isinstance(old_tx.message, MessageV0):
-            logger.debug(f"{self.wallet} | {self.__module_name__} | Message V0 | via {quote['provider']}")
+            logger.info(f"{self.wallet} | {self.__module_name__} | Message V0 | via {quote['provider']}")
 
             bh_resp = await self.client.rpc.get_latest_blockhash()
             recent_blockhash = bh_resp.value.blockhash
@@ -203,7 +203,7 @@ class RangerFinance(Base):
             # MAX_FEE_FROM_SETTINGS::::
             any_token_is_sol = from_token == TokenContracts.SOL or to_token == TokenContracts
 
-            # logger.debug(f'Any token is SOL: {any_token_is_sol}')
+            # logger.info(f'Any token is SOL: {any_token_is_sol}')
 
             if max_fee_sol > 0.0005 and not any_token_is_sol and from_token_ata and to_token_ata:
                 logger.warning(
@@ -252,7 +252,7 @@ class RangerFinance(Base):
                 raise Exception(f"TX Simulation failed: {sim.value.err}")
 
         else:
-            logger.debug(f"{self.wallet} | {self.__module_name__} | LEGACY TX | via {quote['provider']}")
+            logger.info(f"{self.wallet} | {self.__module_name__} | LEGACY TX | via {quote['provider']}")
             new_tx = old_tx
 
             # new_tx = VersionedTransaction(new_tx.message, [self.client.account])
@@ -271,7 +271,7 @@ class RangerFinance(Base):
                 quote_id = quote["quote_id"]
                 try:
                     titan_post_tx = await self.post_titan_tx(quote_id=quote_id, sig=resp)
-                    logger.debug(f"{self.wallet} | {titan_post_tx}")
+                    logger.info(f"{self.wallet} | {titan_post_tx}")
                 except Exception as e:
                     logger.warning(f"{self.wallet} | Post Titan Tx Failed |{e}")
                     pass
@@ -644,53 +644,92 @@ class RangerFinance(Base):
     @controller_log("Swap Controller")
     async def swap_controller(self):
         settings = Settings()
+        logger.info(f"[SWAP] Loaded settings: "
+                    f"min%={settings.swap_amount_percentage_min}, "
+                    f"max%={settings.swap_amount_percentage_max}, "
+                    f"sol_min={settings.sol_balance_for_commissions_min}, "
+                    f"sol_max={settings.sol_balance_for_commissions_max}")
 
         balances = await self.balance_map(token_map=TOKENS_MAP)
+        logger.info(f"[SWAP] Balances loaded: {balances}")
 
         if not balances:
             logger.error("No balances found — skipping swap.")
             return None
 
         usd_balances = await self.usd_balance_map(balances=balances)
+        logger.info(f"[SWAP] USD balances: {usd_balances}")
 
         swap_tokens = [tok for tok in TOKENS_MAP if tok.title in settings.swap_tokens]
+        logger.info(f"[SWAP] Swap tokens: {[t.title for t in swap_tokens]}")
 
         if len(swap_tokens) < 2:
             logger.error(f"Not enough tokens in swap_tokens ({[t.title for t in swap_tokens]}) — skipping.")
             return None
 
         sol_balance = balances.get(TokenContracts.SOL)
+        logger.info(f"[SWAP] SOL balance object: {sol_balance} | Ether={getattr(sol_balance, 'Ether', None)}")
 
-        if TokenContracts.SOL not in swap_tokens and sol_balance.Ether > Decimal(settings.sol_balance_for_commissions_max):
+        if (
+            TokenContracts.SOL not in swap_tokens
+            and Decimal(sol_balance.Ether) > Decimal(settings.sol_balance_for_commissions_max)
+        ):
+            logger.info("[SWAP] Using SOL as from_token (above commission max)")
             from_token = TokenContracts.SOL
             to_token = random.choice([t for t in swap_tokens if t != TokenContracts.SOL])
             swap_amount = Decimal(sol_balance.Ether) - Decimal(settings.sol_balance_for_commissions_max)
+            logger.info(f"[SWAP] from={from_token} to={to_token} swap_amount={swap_amount}")
         else:
             percent = Decimal(
-                str(random.uniform(float(settings.swap_amount_percentage_min), float(settings.swap_amount_percentage_max)))
+                str(random.uniform(
+                    float(settings.swap_amount_percentage_min),
+                    float(settings.swap_amount_percentage_max)
+                ))
             ) / Decimal("100")
+
+            logger.info(f"[SWAP] Selected percent={percent * 100:.2f}%")
 
             from_token = max(usd_balances, key=lambda t: usd_balances[t])
             swap_tokens.remove(from_token)
             to_token = random.choice(swap_tokens)
+            logger.info(f"[SWAP] from_token={from_token}, to_token={to_token}")
 
             if from_token == TokenContracts.SOL:
                 min_sol_balance = Decimal(settings.sol_balance_for_commissions_min)
                 full_balance = Decimal(balances[from_token].Ether)
+                logger.info(f"[SWAP] SOL branch → full_balance={full_balance}, min_sol_balance={min_sol_balance}")
 
                 swap_amount = full_balance * percent
+                logger.info(f"[SWAP] Initial swap_amount={swap_amount}")
 
-                # ensure we never go below the minimum SOL buffer
                 if (full_balance - swap_amount) < min_sol_balance:
-                    swap_amount = full_balance - (min_sol_balance * Decimal("1.05"))  # add a small buffer
+                    logger.info("[SWAP] Adjusting for SOL buffer (+5%)")
+                    swap_amount = full_balance - (min_sol_balance * Decimal("1.05"))
+                    logger.info(f"[SWAP] Adjusted swap_amount={swap_amount}")
+
                     if swap_amount <= 0:
-                        logger.error(f"Skipping swap: SOL balance already below min commission buffer. amount : {swap_amount}")
+                        logger.error(f"Skipping swap: SOL balance below min buffer. amount={swap_amount}")
                         return None
             else:
-                swap_amount = balances[from_token].Ether * percent
+                ether_value = balances[from_token].Ether
+                logger.info(f"[SWAP] Non-SOL branch → Ether={ether_value}, percent={percent}")
+                if ether_value is None:
+                    logger.error(f"[SWAP] Token {from_token} has Ether=None — cannot calculate swap.")
+                    return None
 
-        amount_to_swap = TokenAmount(swap_amount, decimals=balances[from_token].decimals)
+                swap_amount = Decimal(ether_value) * percent
+                logger.info(f"[SWAP] swap_amount={swap_amount}")
 
-        logger.debug(f"Swapping {amount_to_swap.Ether:.4f} {from_token} → {to_token}")
+        if swap_amount is None:
+            logger.error("[SWAP] swap_amount is None — aborting.")
+            return None
 
+        decimals = getattr(balances[from_token], "decimals", None)
+        logger.info(f"[SWAP] from_token={from_token}, decimals={decimals}")
+
+        amount_to_swap = TokenAmount(swap_amount, decimals=decimals)
+        logger.info(f"[SWAP] Final amount_to_swap={amount_to_swap.Ether}, from={from_token}, to={to_token}")
+
+        logger.info(f"[SWAP] Swapping {amount_to_swap.Ether:.4f} {from_token} → {to_token}")
         return await self.swap_from_quote(from_token=from_token, to_token=to_token, amount=amount_to_swap)
+
