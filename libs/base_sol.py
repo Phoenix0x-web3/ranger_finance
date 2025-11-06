@@ -12,15 +12,15 @@ from utils.db_api.models import Wallet
 
 class TokenContracts:
     SOL = RawContract(
-        title="SOL", mint="So11111111111111111111111111111111111111112", program="TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        title="SOL", mint="So11111111111111111111111111111111111111112", program="TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", decimals=9
     )
 
     USDC = RawContract(
-        title="USDC", mint="EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", program="TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        title="USDC", mint="EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", program="TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", decimals=6
     )
 
     USDT = RawContract(
-        title="USDT", mint="Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB", program="TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        title="USDT", mint="Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB", program="TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", decimals=6
     )
 
 
@@ -57,7 +57,7 @@ class Base:
                 await asyncio.sleep(5)
         raise ValueError(f"Can not get {token_symbol + second_token} price from Binance")
 
-    async def balance_map(self, token_map):
+    async def balance_map(self, token_map: list):
         tokens = {}
 
         for token in token_map:
@@ -68,13 +68,29 @@ class Base:
                 else:
                     balance: TokenAmount = await self.client.wallet.balance(token=token)
 
-                if balance.Ether > 0.0001:
-                    tokens[token] = balance
+                # if balance.Ether > 0.0001:
+                #     tokens[token] = balance
 
-            except Exception:
+                tokens[token] = balance
+
+            except Exception as e:
+                if "Invalid param: could not find account" in str(e):
+                    tokens[token] = TokenAmount(amount=0, decimals=token.decimals)
+
                 continue
 
         return tokens
+
+    async def usd_balance_map(self, balances):
+        usd_balanced = {}
+        for token, balance in balances.items():
+            if token == TokenContracts.SOL:
+                sol_price = await self.get_token_price(token_symbol="SOL")
+                usd_balanced[token] = float(balance.Ether) * sol_price
+            else:
+                usd_balanced[token] = float(balance.Ether)
+
+        return usd_balanced
 
     async def debug_blockhashes(self, tx_b64: str) -> dict:
         tx = VersionedTransaction.from_bytes(base64.b64decode(tx_b64))

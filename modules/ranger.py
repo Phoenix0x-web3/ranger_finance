@@ -23,6 +23,8 @@ from utils.db_api.wallet_api import db
 from utils.logs_decorator import controller_log
 from utils.retry import async_retry
 
+TOKENS_MAP = [TokenContracts.USDC, TokenContracts.USDT, TokenContracts.SOL]
+
 
 class RangerFinance(Base):
     __module_name__ = "Ranger Finance"
@@ -79,7 +81,7 @@ class RangerFinance(Base):
         return r.json()
 
     @staticmethod
-    def parse_quote_amounts(quote: Dict) -> Tuple[TokenAmount, TokenAmount]:
+    def parse_quote_amounts(quote: Dict, sol_price: float) -> Tuple[TokenAmount, TokenAmount]:
         def _decimals_for_mint(mint: str) -> int:
             if mint in (str(TokenContracts.USDC.mint), str(TokenContracts.USDT.mint)):
                 return 6
@@ -90,7 +92,13 @@ class RangerFinance(Base):
         ranger_fee = quote.get("ranger_fee", {})
 
         out_amount = TokenAmount(amount=out_info.get("amount", 0), decimals=_decimals_for_mint(out_info.get("mint")), wei=True)
-        fee_amount = TokenAmount(amount=ranger_fee.get("amount", 0), decimals=_decimals_for_mint(ranger_fee.get("mint")), wei=True)
+        if out_info.get("mint") == "So11111111111111111111111111111111111111112":
+            fee_amount = TokenAmount(
+                amount=ranger_fee.get("amount", 0) * sol_price, decimals=_decimals_for_mint(ranger_fee.get("mint")), wei=True
+            )
+        else:
+            fee_amount = TokenAmount(amount=ranger_fee.get("amount", 0), decimals=_decimals_for_mint(ranger_fee.get("mint")), wei=True)
+
         return out_amount, fee_amount
 
     async def best_quote(
@@ -153,8 +161,6 @@ class RangerFinance(Base):
 
         quote = await self.best_quote(input_mint=from_token.mint, output_mint=to_token.mint, input_amount=amount.Wei)
 
-        output, ranger_fee = self.parse_quote_amounts(quote)
-
         tx_b64 = quote.get("transaction")
         if not tx_b64:
             return f"{self.wallet} | {self.__module_name__} | No transaction in quote"
@@ -165,6 +171,10 @@ class RangerFinance(Base):
         onchain_fees = self.client.instruct.parse_from_instructions(old_tx.message)
 
         max_fee_sol = onchain_fees.max_fee_sol
+
+        sol_price = await self.get_token_price(token_symbol="SOL")
+
+        output, ranger_fee = self.parse_quote_amounts(quote, sol_price)
 
         logger.debug(
             f"{self.wallet} | {self.__module_name__} | Trying to swap {amount} {from_token} to {output} {to_token} with {ranger_fee} usd ranger fee | onchain fee {max_fee_sol:.5f} sol | via {quote['provider']}"
@@ -266,8 +276,6 @@ class RangerFinance(Base):
                     logger.warning(f"{self.wallet} | Post Titan Tx Failed |{e}")
                     pass
             try:
-                sol_price = await self.get_token_price(token_symbol="SOL")
-
                 max_fee_usd = max_fee_sol * sol_price
 
                 volume = float(output.Ether)
@@ -292,7 +300,7 @@ class RangerFinance(Base):
                 pass
 
             finally:
-                return f"Success | Swapped {amount} {from_token} to {output} {to_token} | Ranger fee {ranger_fee} USD | Onchain fee {max_fee_sol:.7f} sol | via {quote['provider']} | sent tx {resp}"
+                return f"Success | Swapped {amount} {from_token} to {output} {to_token} | Ranger fee {ranger_fee} USD | Onchain fee {max_fee_sol:.7f} sol | via {quote['provider']} | https://solscan.io/tx/{resp}"
 
         raise Exception(f"Something Wrong in {resp}")
 
@@ -635,25 +643,54 @@ class RangerFinance(Base):
 
     @controller_log("Swap Controller")
     async def swap_controller(self):
-        stablecoins = [TokenContracts.USDC, TokenContracts.USDT]
+        settings = Settings()
 
-        balances = await self.balance_map(token_map=stablecoins)
+        balances = await self.balance_map(token_map=TOKENS_MAP)
+
         if not balances:
-            logger.warning("No stablecoin balances found — skipping swap.")
+            logger.error("No balances found — skipping swap.")
             return None
 
-        # get the from_token with the highest balance
-        from_token = max(balances, key=lambda t: balances[t].Ether)
-        to_token = next(t for t in stablecoins if t != from_token)
+        usd_balances = await self.usd_balance_map(balances=balances)
 
-        percent = Decimal(
-            str(random.uniform(Settings().stablecoin_swap_percentage_min, Settings().stablecoin_swap_percentage_max))
-        ) / Decimal("100")
+        swap_tokens = [tok for tok in TOKENS_MAP if tok.title in settings.swap_tokens]
 
-        full_amount = balances[from_token].Ether
-        swap_amount = full_amount * percent
+        if len(swap_tokens) < 2:
+            logger.error(f"Not enough tokens in swap_tokens ({[t.title for t in swap_tokens]}) — skipping.")
+            return None
+
+        sol_balance = balances.get(TokenContracts.SOL)
+
+        if TokenContracts.SOL not in swap_tokens and sol_balance.Ether > Decimal(settings.sol_balance_for_commissions_max):
+            from_token = TokenContracts.SOL
+            to_token = random.choice([t for t in swap_tokens if t != TokenContracts.SOL])
+            swap_amount = Decimal(sol_balance.Ether) - Decimal(settings.sol_balance_for_commissions_max)
+        else:
+            percent = Decimal(str(random.uniform(settings.swap_amount_percentage_min, settings.swap_amount_percentage_max))) / Decimal(
+                "100"
+            )
+
+            from_token = max(usd_balances, key=lambda t: usd_balances[t])
+            swap_tokens.remove(from_token)
+            to_token = random.choice(swap_tokens)
+
+            if from_token == TokenContracts.SOL:
+                min_sol_balance = Decimal(settings.sol_balance_for_commissions_min)
+                full_balance = Decimal(balances[from_token].Ether)
+
+                swap_amount = full_balance * percent
+
+                # ensure we never go below the minimum SOL buffer
+                if (full_balance - swap_amount) < min_sol_balance:
+                    swap_amount = full_balance - (min_sol_balance * 1.05)  # add a small buffer
+                    if swap_amount <= 0:
+                        logger.error(f"Skipping swap: SOL balance already below min commission buffer. amount : {swap_amount}")
+                        return None
+            else:
+                swap_amount = balances[from_token].Ether * percent
+
         amount_to_swap = TokenAmount(swap_amount, decimals=balances[from_token].decimals)
 
-        logger.debug(f"Swapping {amount_to_swap.Ether:.4f} {from_token} → {to_token} ({percent * 100:.2f}% of balance)")
+        logger.debug(f"Swapping {amount_to_swap.Ether:.4f} {from_token} → {to_token}")
 
         return await self.swap_from_quote(from_token=from_token, to_token=to_token, amount=amount_to_swap)
