@@ -139,7 +139,7 @@ refill_usd_amount:
   min: 8
   max: 10 
 
-# Amount percentage to swap between each swap on SPOT
+# Percentage of amount to swap per spot trade
 swap_amount_percentage:
   min: 80
   max: 100
