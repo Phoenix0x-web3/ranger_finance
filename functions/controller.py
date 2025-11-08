@@ -192,7 +192,7 @@ class Controller:
             return f"Deposit to {self.wallet.deposit_address} finished | Current USD Balances: {usd_balances}"
 
         except Exception as e:
-            raise f"Deposit Controller | Error: {e}"
+            raise Exception(f"Deposit Controller | Error: {e}")
 
 
         #todo transfer to deposit address
