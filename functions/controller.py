@@ -29,8 +29,8 @@ class Controller:
 
         if rank:
             self.wallet.rank = rank.get('position')
-            self.wallet.volume_portal = rank.get('total_volume')
-            self.wallet.points = rank.get('total_points')
+            self.wallet.volume_portal = int(rank.get('total_volume'))
+            self.wallet.points = int(rank.get('total_points'))
 
             self.wallet.point_cost = round(self.wallet.summary_fees / self.wallet.points, 3) if self.wallet.points else 0
             db.commit()
