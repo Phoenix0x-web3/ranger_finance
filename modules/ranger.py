@@ -528,6 +528,7 @@ class RangerFinance(Base):
             logger.error(f"{self.wallet} | {self.__module_name__} | Login failed on initialize-ranger-account")
         return r.json().get("user")
 
+    @async_retry(retries=3, delay=2)
     @controller_log("Apply Refferal Link")
     async def apply_referral(self, invite_code=None):
         if not self.cookies:
@@ -592,6 +593,7 @@ class RangerFinance(Base):
         else:
             return r.json().get("referrer_wallet_address")
 
+    @async_retry(retries=3, delay=2)
     async def get_leaderboard_rank(self):
         if not self.cookies:
             await self.login()
