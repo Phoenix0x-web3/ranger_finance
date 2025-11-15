@@ -33,7 +33,7 @@ async def swap_sol_to_stable(wallet):
         logger.success(stats)
 
     except Exception as e:
-        logger.error(f"Core | Activity | {wallet} | {e}")
+        logger.error(f"Core | Activity | {wallet} | {repr(e)}")
         raise e
 
 
@@ -48,7 +48,7 @@ async def withdraw_and_swap(wallet):
         logger.success(stats)
 
     except Exception as e:
-        logger.error(f"Core | Withdraw and Swap | {wallet} | {e}")
+        logger.error(f"Core | Withdraw and Swap | {wallet} | {repr(e)}")
         raise e
 
 
@@ -63,7 +63,7 @@ async def deposit(wallet):
         logger.success(stats)
 
     except Exception as e:
-        logger.error(f"Core | Deposit | {wallet} | {e}")
+        logger.error(f"Core | Deposit | {wallet} | {repr(e)}")
         raise e
 
 
@@ -77,7 +77,7 @@ async def update_statistics(wallet):
         await controller.update_db_by_user_info()
 
     except Exception as e:
-        logger.error(f"Core | Activity | {wallet} | {e}")
+        logger.error(f"Core | Activity | {wallet} | {repr(e)}")
         raise e
 
 
@@ -120,7 +120,7 @@ async def swaps_activity_task(wallet):
         raise
 
     except Exception as e:
-        logger.error(f"Core | Activity | {wallet} | {e}")
+        logger.error(f"Core | Activity | {wallet} | {repr(e)}")
         raise e
 
 
@@ -136,7 +136,7 @@ async def execute(wallets: List[Wallet], task_func, random_pause_wallet_after_co
                 try:
                     await task_func(wallet)
                 except Exception as e:
-                    logger.error(f"[{wallet.id}] failed: {e}")
+                    logger.error(f"[{wallet.id}] failed: {repr(e)}")
 
         tasks = [asyncio.create_task(sem_task(wallet)) for wallet in wallets]
         await asyncio.gather(*tasks, return_exceptions=True)
